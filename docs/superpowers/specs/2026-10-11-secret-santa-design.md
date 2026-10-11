@@ -32,6 +32,7 @@ Why Telegram-only: everyone already has it, identity comes for free (no sign-up)
 - **A pairing leaks.** Nobody, including the organiser, sees who is whose Santa — with one deliberate exception below. The giftee never learns their Santa: not through chat, notifications, API responses, or UI. Notifications never name the giftee or include message text ("Your giftee replied", never "Masha replied").
 - **Addresses leak.** An address is visible only to its owner and to the person who drew it. Never in the waiting room, progress list, or any other member's API response.
 - Someone draws themselves.
+- **Broken pairing.** In every drawn exchange, every member is Santa to exactly one giftee and giftee of exactly one Santa, always. Enforced three ways: the draw produces a permutation of the members (checked before saving); the database has unique constraints on (exchange, santa) and (exchange, giftee); and nothing after the draw can add, remove or reassign a member (no leaving, removing, block-removal or re-draw once drawn). A test asserts this for every exchange size from 3 to 100.
 - Good-faith Santas get punished: a Santa who marked their gift as sent is never revealed or offered for blocking.
 
 **The one deliberate exception:** after the deadline passes, the organiser (only) sees the identity of Santas whose giftee hasn't received a gift **and** who haven't marked it as sent.
