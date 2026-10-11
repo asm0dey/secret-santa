@@ -61,6 +61,7 @@ export default {
   'join.nicknameHint': 'Так вас будут видеть другие.',
   'join.address': 'Адрес доставки',
   'join.addressHint': 'Этот адрес увидит только тот, кто будет вам дарить.',
+  'join.wishMode': 'Идеи для подарка',
   'join.wishMode.ideas': 'Есть идеи',
   'join.wishMode.surprise': 'Удивите меня',
   'join.wishlist': 'Ссылка на вишлист',
