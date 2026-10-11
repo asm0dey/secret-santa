@@ -62,7 +62,7 @@ export default {
   'create.deadlineOnly': 'Название и бюджет после жеребьёвки не меняются. Срок можно перенести.',
   'create.submit': 'Создать обмен',
 
-  'join.title': 'Присоединиться',
+  'join.title': 'Присоединиться к обмену',
   'join.summary.one': 'Организатор: {organiser} · присоединился {count} участник',
   'join.summary.few': 'Организатор: {organiser} · присоединились {count} участника',
   'join.summary.many': 'Организатор: {organiser} · присоединились {count} участников',
@@ -96,7 +96,7 @@ export default {
   'exchange.joinOwn': 'Присоединиться к своему обмену',
   'exchange.draw': 'Начать жеребьёвку',
   'exchange.drawNeedMore': 'Для жеребьёвки нужно минимум 3 человека.',
-  'exchange.drawConfirm': 'Провести жеребьёвку? После неё никто не сможет войти или выйти.',
+  'exchange.drawConfirm': 'Провести жеребьёвку? После неё никто не сможет присоединиться или выйти.',
   'exchange.drawConfirmYes': 'Да, провести',
   'exchange.finishDraw': 'Завершить жеребьёвку',
   'exchange.finishDrawHint': 'Жеребьёвка прервалась. Завершите её, чтобы каждый узнал, кому дарит подарок.',
@@ -110,8 +110,8 @@ export default {
   'exchange.deleteConfirm': 'Удалить «{name}»? Все участники получат уведомление об отмене.',
   'exchange.closed': 'Этот обмен завершён',
 
-  'tabs.giftee': 'Кому дарю',
-  'tabs.gift': 'Подарок',
+  'tabs.giftee': 'Кому я дарю',
+  'tabs.gift': 'Мой подарок',
   'tabs.progress': 'Прогресс',
 
   'giftee.hero': 'Вы — Тайный Санта для',
@@ -139,8 +139,8 @@ export default {
   'gift.received': 'Получен',
   'gift.messageSanta': 'Написать моему Санте',
   'gift.editMine': 'Изменить мои данные',
-  'gift.markReceived': 'Подарок получен',
-  'gift.receivedConfirm': 'Отметить подарок полученным? Ваш Санта получит уведомление.',
+  'gift.markReceived': 'Отметить как полученный',
+  'gift.receivedConfirm': 'Отметить подарок как полученный? Ваш Санта получит уведомление.',
 
   'progress.title': 'Кто получил подарок',
   'progress.deadline': 'Подарки до {date}',
@@ -156,7 +156,7 @@ export default {
   'progress.onWay': 'в пути',
   'progress.received': 'получен',
   'progress.onlyYou': 'Это видите только вы',
-  'progress.overdue': 'Санта {giftee} — {santa}, и отправка подарка не отмечена.',
+  'progress.overdue': 'Санта для {giftee} — {santa}. Отправка подарка не отмечена.',
   'progress.message': 'Написать {santa}',
   'progress.block': 'Заблокировать {santa}',
   'progress.blockConfirm': 'Заблокировать {santa}? Этот участник не сможет создавать обмены и участвовать в них, а из обменов, где жеребьёвки ещё не было, будет убран.',

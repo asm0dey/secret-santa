@@ -52,7 +52,7 @@ test('draw: a valid pairing, status drawn, one private message per member', asyn
   expect(en.text).toBe('<b>Names are drawn for "Office &lt;Santa&gt;"</b>\nAnnie started the draw. Open the app to see who you\'re gifting to. Budget: up to 50 EUR.');
   expect(en.reply_markup.inline_keyboard[0][0].text).toBe('See my recipient');
   const ru = msgs.find((m) => m.params.chat_id === 2)?.params;
-  expect(ru.text).toBe('<b>Жеребьёвка в обмене «Office &lt;Santa&gt;» прошла</b>\nAnnie запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: до 50 EUR.');
+  expect(ru.text).toBe('<b>Жеребьёвка в обмене «Office &lt;Santa&gt;» прошла</b>\nОрганизатор Annie запустил жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: до 50 EUR.');
   expect(ru.reply_markup.inline_keyboard[0][0].text).toBe('Кому я дарю');
 });
 

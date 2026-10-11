@@ -24,11 +24,11 @@ Every user-facing string in the Secret Santa bot and Mini App, English next to R
 | btnSeeRecipient | See my recipient | Кому я дарю | |
 | btnUnblock | Unblock | Разблокировать | |
 | closedLost | {giftee}'s gift was marked as sent but never arrived. It may have been lost in the post. | Подарок для {giftee} был отправлен, но так и не дошёл. Возможно, он потерялся на почте. | |
-| closedNoGift | {giftee} never received a gift. Their Santa was &lt;b&gt;{santa}&lt;/b&gt;, who never marked it as sent. You can message {santa}, or block them from Secret Santa so they can't create or join exchanges again. | Подарок для {giftee} так и не дошёл: Санта — &lt;b&gt;{santa}&lt;/b&gt; — не отметил отправку. Вы можете написать {santa} или заблокировать его в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них. | |
+| closedNoGift | {giftee} never received a gift. Their Santa was &lt;b&gt;{santa}&lt;/b&gt;, who never marked it as sent. You can message {santa}, or block them from Secret Santa so they can't create or join exchanges again. | Подарок для {giftee} так и не дошёл: Санта — &lt;b&gt;{santa}&lt;/b&gt; — не отметил отправку. Вы можете написать {santa} или заблокировать этого участника в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них. | |
 | closedSummary | &lt;b&gt;"{exchange}" has closed&lt;/b&gt;<br>{received} of {total} gifts arrived. | &lt;b&gt;Обмен «{exchange}» завершён&lt;/b&gt;<br>Дошло подарков: {received} из {total}. | |
 | done | Done | Готово | |
-| drawn | &lt;b&gt;Names are drawn for "{exchange}"&lt;/b&gt;<br>{organiser} started the draw. Open the app to see who you're gifting to. Budget: {budget}. | &lt;b&gt;Жеребьёвка в обмене «{exchange}» прошла&lt;/b&gt;<br>{organiser} запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}. | |
-| errForbidden | Not allowed. | Недоступно. | |
+| drawn | &lt;b&gt;Names are drawn for "{exchange}"&lt;/b&gt;<br>{organiser} started the draw. Open the app to see who you're gifting to. Budget: {budget}. | &lt;b&gt;Жеребьёвка в обмене «{exchange}» прошла&lt;/b&gt;<br>Организатор {organiser} запустил жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}. | |
+| errForbidden | Not allowed. | Нет доступа. | |
 | errGeneric | Something went wrong. | Что-то пошло не так. | |
 | errNotFound | Not found. | Не найдено. | |
 | errNotYet | Not yet: wait until the deadline has passed. | Ещё рано: дождитесь, пока пройдёт срок. | |
@@ -122,7 +122,7 @@ Every user-facing string in the Secret Santa bot and Mini App, English next to R
 | exchange.delete | Delete exchange | Удалить обмен | |
 | exchange.deleteConfirm | Delete "{name}"? Everyone who joined will be told it was cancelled. | Удалить «{name}»? Все участники получат уведомление об отмене. | |
 | exchange.draw | Start the draw | Начать жеребьёвку | |
-| exchange.drawConfirm | Draw names now? Nobody can join or leave afterwards. | Провести жеребьёвку? После неё никто не сможет войти или выйти. | |
+| exchange.drawConfirm | Draw names now? Nobody can join or leave afterwards. | Провести жеребьёвку? После неё никто не сможет присоединиться или выйти. | |
 | exchange.drawConfirmYes | Yes, draw | Да, провести | |
 | exchange.drawNeedMore | You need at least 3 people to draw names. | Для жеребьёвки нужно минимум 3 человека. | |
 | exchange.drawing | Names are being drawn… | Идёт жеребьёвка… | |
@@ -149,12 +149,12 @@ Every user-facing string in the Secret Santa bot and Mini App, English next to R
 | gift.dueBy | due by {date} | срок: {date} | |
 | gift.editMine | Edit my details | Изменить мои данные | |
 | gift.from | From your Secret Santa | От вашего Тайного Санты | |
-| gift.markReceived | I received my gift | Подарок получен | |
+| gift.markReceived | I received my gift | Отметить как полученный | |
 | gift.messageSanta | Message my Santa | Написать моему Санте | |
 | gift.notSent | Not sent yet | Пока не отправлен | |
 | gift.onWay | On its way | В пути | |
 | gift.received | Received | Получен | |
-| gift.receivedConfirm | Mark your gift as received? Your Santa will be told. | Отметить подарок полученным? Ваш Санта получит уведомление. | |
+| gift.receivedConfirm | Mark your gift as received? Your Santa will be told. | Отметить подарок как полученный? Ваш Санта получит уведомление. | |
 | giftee.address | Send the gift to | Куда отправить подарок | |
 | giftee.hero | You are Secret Santa for | Вы — Тайный Санта для | |
 | giftee.likes | Likes and dislikes | Что нравится и что не нравится | |
@@ -195,7 +195,7 @@ Every user-facing string in the Secret Santa bot and Mini App, English next to R
 | join.summary.few | {organiser} is organising · {count} people joined | Организатор: {organiser} · присоединились {count} участника | |
 | join.summary.many | {organiser} is organising · {count} people joined | Организатор: {organiser} · присоединились {count} участников | |
 | join.summary.other | {organiser} is organising · {count} people joined | Организатор: {organiser} · присоединились {count} участника | |
-| join.title | Join exchange | Присоединиться | |
+| join.title | Join exchange | Присоединиться к обмену | |
 | join.wishMode | Gift ideas | Идеи для подарка | |
 | join.wishMode.ideas | I have ideas | Есть идеи | |
 | join.wishMode.surprise | Surprise me | Удивите меня | |
@@ -228,11 +228,11 @@ Every user-facing string in the Secret Santa bot and Mini App, English next to R
 | progress.nudged.other | Reminder sent to {count} Santas | Напоминание отправлено {count} Сантам | |
 | progress.onWay | on its way | в пути | |
 | progress.onlyYou | Only you see this | Это видите только вы | |
-| progress.overdue | {giftee}'s Santa is {santa} and hasn't marked the gift as sent. | Санта {giftee} — {santa}, и отправка подарка не отмечена. | |
+| progress.overdue | {giftee}'s Santa is {santa} and hasn't marked the gift as sent. | Санта для {giftee} — {santa}. Отправка подарка не отмечена. | |
 | progress.received | received | получен | |
 | progress.title | Who has received a gift | Кто получил подарок | |
-| tabs.gift | My gift | Подарок | |
-| tabs.giftee | My giftee | Кому дарю | |
+| tabs.gift | My gift | Мой подарок | |
+| tabs.giftee | My giftee | Кому я дарю | |
 | tabs.progress | Progress | Прогресс | |
 | theme.auto | Auto | Авто | |
 | theme.christmas | Christmas | Рождество | |
@@ -261,3 +261,13 @@ These Russian strings were corrected before this review (the table above already
 | App `progress.blockConfirm` | Заблокировать {santa}? Он(а) не сможет создавать обмены и участвовать в них, и будет убран(а) из обменов без жеребьёвки. | Заблокировать {santa}? Этот участник не сможет создавать обмены и участвовать в них, а из обменов, где жеребьёвки ещё не было, будет убран. | Removed gender slashes («Он(а)», «убран(а)»). |
 | App `progress.notDelivered` | Не удалось доставить: возможно, бот заблокирован | Не удалось доставить: возможно, участник заблокировал бота | Original «бот заблокирован» read as if the bot were blocked, the opposite of the English meaning. |
 | App `progress.blocked` | {santa} заблокирован(а) | Заблокирован: {santa} | Removed gendered «заблокирован(а)». |
+| Bot `drawn` | &lt;b&gt;Жеребьёвка в обмене «{exchange}» прошла&lt;/b&gt;<br>{organiser} запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}. | &lt;b&gt;Жеребьёвка в обмене «{exchange}» прошла&lt;/b&gt;<br>Организатор {organiser} запустил жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}. | user-approved reviewer suggestion |
+| App `tabs.gift` | Подарок | Мой подарок | user-approved reviewer suggestion |
+| App `tabs.giftee` | Кому дарю | Кому я дарю | user-approved reviewer suggestion |
+| App `progress.overdue` | Санта {giftee} — {santa}, и отправка подарка не отмечена. | Санта для {giftee} — {santa}. Отправка подарка не отмечена. | user-approved reviewer suggestion |
+| App `gift.receivedConfirm` | Отметить подарок полученным? Ваш Санта получит уведомление. | Отметить подарок как полученный? Ваш Санта получит уведомление. | user-approved reviewer suggestion |
+| App `gift.markReceived` | Подарок получен | Отметить как полученный | user-approved reviewer suggestion |
+| Bot `errForbidden` | Недоступно. | Нет доступа. | user-approved reviewer suggestion |
+| App `join.title` | Присоединиться | Присоединиться к обмену | user-approved reviewer suggestion |
+| App `exchange.drawConfirm` | Провести жеребьёвку? После неё никто не сможет войти или выйти. | Провести жеребьёвку? После неё никто не сможет присоединиться или выйти. | user-approved reviewer suggestion |
+| Bot `closedNoGift` | Подарок для {giftee} так и не дошёл: Санта — &lt;b&gt;{santa}&lt;/b&gt; — не отметил отправку. Вы можете написать {santa} или заблокировать его в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них. | Подарок для {giftee} так и не дошёл: Санта — &lt;b&gt;{santa}&lt;/b&gt; — не отметил отправку. Вы можете написать {santa} или заблокировать этого участника в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них. | user-approved reviewer suggestion |

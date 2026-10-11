@@ -109,6 +109,76 @@ export const EDITS = [
     "before": "{santa} заблокирован(а)",
     "after": "Заблокирован: {santa}",
     "why": "Removed gendered «заблокирован(а)»."
+  },
+  {
+      "scope": "bot",
+      "key": "drawn",
+      "before": "<b>Жеребьёвка в обмене «{exchange}» прошла</b>\n{organiser} запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}.",
+      "after": "<b>Жеребьёвка в обмене «{exchange}» прошла</b>\nОрганизатор {organiser} запустил жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}.",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "tabs.gift",
+      "before": "Подарок",
+      "after": "Мой подарок",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "tabs.giftee",
+      "before": "Кому дарю",
+      "after": "Кому я дарю",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "progress.overdue",
+      "before": "Санта {giftee} — {santa}, и отправка подарка не отмечена.",
+      "after": "Санта для {giftee} — {santa}. Отправка подарка не отмечена.",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "gift.receivedConfirm",
+      "before": "Отметить подарок полученным? Ваш Санта получит уведомление.",
+      "after": "Отметить подарок как полученный? Ваш Санта получит уведомление.",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "gift.markReceived",
+      "before": "Подарок получен",
+      "after": "Отметить как полученный",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "bot",
+      "key": "errForbidden",
+      "before": "Недоступно.",
+      "after": "Нет доступа.",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "join.title",
+      "before": "Присоединиться",
+      "after": "Присоединиться к обмену",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "app",
+      "key": "exchange.drawConfirm",
+      "before": "Провести жеребьёвку? После неё никто не сможет войти или выйти.",
+      "after": "Провести жеребьёвку? После неё никто не сможет присоединиться или выйти.",
+      "why": "user-approved reviewer suggestion"
+  },
+  {
+      "scope": "bot",
+      "key": "closedNoGift",
+      "before": "Подарок для {giftee} так и не дошёл: Санта — <b>{santa}</b> — не отметил отправку. Вы можете написать {santa} или заблокировать его в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них.",
+      "after": "Подарок для {giftee} так и не дошёл: Санта — <b>{santa}</b> — не отметил отправку. Вы можете написать {santa} или заблокировать этого участника в Тайном Санте, чтобы он больше не мог создавать обмены и участвовать в них.",
+      "why": "user-approved reviewer suggestion"
   }
 ];
 
