@@ -9,6 +9,7 @@ import { loadExchange } from '../lib/access.js';
 import { displayCode } from '../lib/code.js';
 import { BOT_USERNAME } from '../lib/config.js';
 import { budgetOf } from '../lib/exchangeFields.js';
+import { overdueOf } from '../lib/overdue.js';
 import { detailsOf, wishTag } from '../lib/details.js';
 
 /**
@@ -53,6 +54,7 @@ export default async function ({ id }, ctx) {
       const a = asgs.find((x) => x.gifteeId === m.userId);
       return a ? [{ userId: m.userId, nickname: m.nickname, gift: giftStatus(a) }] : [];
     }),
-    // Task 10 adds overdue.
+    // Names the late Santas: the organiser alone ever gets them.
+    overdue: isOrganiser ? await overdueOf(ex) : [],
   };
 }

@@ -25,6 +25,9 @@ export const BOT = {
     newFromSanta: '<b>{exchange}</b>\nYour Secret Santa sent you a message.',
     newFromGiftee: '<b>{exchange}</b>\nYour giftee replied to you.',
     btnOpenChat: 'Open chat',
+    nudge: '<b>{exchange}</b>\nReminder: gifts were due by {deadline}, and your giftee hasn\'t received theirs yet. If it\'s on the way, mark it as sent or tell them in the anonymous chat.',
+    fromOrganiser: '<b>Message from {organiser}, organiser of "{exchange}"</b>\n{text}',
+    btnReplyOrganiser: 'Reply to {organiser}',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
@@ -39,6 +42,9 @@ export const BOT = {
     newFromSanta: '<b>{exchange}</b>\nТайный Санта прислал вам сообщение.',
     newFromGiftee: '<b>{exchange}</b>\nВаш получатель ответил вам.',
     btnOpenChat: 'Открыть чат',
+    nudge: '<b>{exchange}</b>\nНапоминание: подарки нужно было отправить до {deadline}, а ваш получатель ещё ничего не получил. Если подарок в пути, отметьте его как отправленный или напишите получателю в анонимном чате.',
+    fromOrganiser: '<b>Сообщение от {organiser}, организатора обмена «{exchange}»</b>\n{text}',
+    btnReplyOrganiser: 'Ответить {organiser}',
   },
 };
 

@@ -28,6 +28,8 @@
 
 /** @typedef {{ userId: number, nickname: string | null, gift: GiftStatus }} ProgressRow status of the gift this member will receive */
 
+/** @typedef {{ gifteeUserId: number, gifteeName: string, santaUserId: number, santaName: string, santaUsername: string | null }} OverdueRow organiser-only: a Santa past the deadline who has not sent */
+
 /**
  * The getExchange response. `giftee`/`myGift` are null unless the exchange is drawn and the caller is in a pair;
  * `progress` is empty until assignments exist. `drawPending`: drawn but the assignments were never written.
@@ -37,7 +39,7 @@
  *   isOrganiser: boolean, organiserName: string,
  *   members: { userId: number, nickname: string | null, isMe: boolean, isOrganiser: boolean, tag: 'surprise' | 'wishlist' | null }[],
  *   me: ReturnType<typeof import('./details.js').detailsOf> | null,
- *   drawPending: boolean, giftee: Giftee | null, myGift: MyGift | null, progress: ProgressRow[],
+ *   drawPending: boolean, giftee: Giftee | null, myGift: MyGift | null, progress: ProgressRow[], overdue: OverdueRow[],
  * }} ExchangeView
  */
 
