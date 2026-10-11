@@ -1,7 +1,7 @@
 <script>
   // Create (#/new) and edit (#/x/:id/edit). After the draw only the deadline can change.
   import { call } from '../lib/api.js';
-  import { replace } from '../lib/router.js';
+  import { replace, backOrReplace } from '../lib/router.js';
   import { t, lang, errorText } from '../lib/i18n.js';
   import Segmented from '../components/Segmented.svelte';
 
@@ -105,7 +105,7 @@
         replace(`#/join/${res.code}`);
       } else {
         await call('updateExchange', drawn ? { id: Number(id), deadline } : { id: Number(id), name: name.trim(), budget: budget(), deadline });
-        replace(`#/x/${id}`);
+        backOrReplace(`#/x/${id}`);
       }
     } catch (err) {
       error = errorText(/** @type {{ code?: string }} */ (err).code);

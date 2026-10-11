@@ -3,7 +3,7 @@ import { ERR } from '../tgcloud/lib/errors.js';
 import { resolveTheme } from '../src/lib/theme.js';
 import en from '../src/lib/strings/en.js';
 import ru from '../src/lib/strings/ru.js';
-import { parse, fromStartParam, replace } from '../src/lib/router.js';
+import { parse, fromStartParam, replace, backOrReplace, initRouter } from '../src/lib/router.js';
 
 test('theme: pref + scheme resolve to a daisyUI theme', () => {
   expect(resolveTheme('auto', 'dark')).toBe('tgdark');
@@ -120,4 +120,59 @@ test('i18n: member count wording follows plural rules', async () => {
   const { tn } = await import('../src/lib/i18n.js');
   expect(tn('home.members', 1)).toBe('1 person');
   expect(tn('home.members', 5)).toBe('5 people');
+});
+
+test('router: backOrReplace goes back when the previous entry is that path, else replaces', async () => {
+  const g = /** @type {any} */ (globalThis);
+  /** @type {(() => void)[]} */
+  const listeners = [];
+  /** @type {string[]} */
+  const log = [];
+  // A tiny browser: entries[], current index; hash assignment pushes, replace swaps, back moves.
+  /** @type {{ hash: string, state: any }[]} */
+  let entries = [{ hash: '#/', state: null }];
+  let i = 0;
+  const fire = () => listeners.forEach((l) => l());
+  g.addEventListener = (/** @type {string} */ _e, /** @type {() => void} */ l) => listeners.push(l);
+  g.location = {
+    search: '',
+    get hash() { return entries[i].hash; },
+    set hash(h) { entries = [...entries.slice(0, i + 1), { hash: h, state: null }]; i += 1; fire(); },
+    replace(/** @type {string} */ h) { if (h !== entries[i].hash) { entries[i] = { hash: h, state: null }; fire(); } log.push('replace ' + h); },
+  };
+  g.history = {
+    get state() { return entries[i].state; },
+    replaceState(/** @type {any} */ s) { entries[i].state = s; },
+    back() { i -= 1; log.push('back'); fire(); },
+  };
+  try {
+    initRouter();
+    const go = (/** @type {string} */ h) => { g.location.hash = h; };
+    go('#/x/3'); go('#/x/3/edit');
+    backOrReplace('/x/3'); // previous entry is #/x/3
+    expect(log).toEqual(['back']);
+    expect(g.location.hash).toBe('#/x/3');
+    log.length = 0;
+    go('#/x/3/edit'); // pushed after going back: trail is cut and rebuilt
+    backOrReplace('#/x/3');
+    expect(log).toEqual(['back']);
+    log.length = 0;
+    go('#/x/3/details'); replace('#/x/9/details'); // replace keeps the slot, so the previous entry is still #/x/3
+    backOrReplace('#/x/3');
+    expect(log).toEqual(['replace #/x/9/details', 'back']);
+    log.length = 0;
+    go('#/join/K7Q4MX'); // came from #/x/3, saving to somewhere else: replace
+    backOrReplace('#/x/77');
+    expect(log).toEqual(['replace #/x/77']);
+    expect(entries.map((e) => e.hash).at(-1)).toBe('#/x/77');
+  } finally {
+    for (const k of ['addEventListener', 'location', 'history']) delete g[k];
+  }
+});
+
+test('i18n: join and exchange summaries pluralise with extra params', async () => {
+  const { tn } = await import('../src/lib/i18n.js');
+  expect(tn('join.summary', 1, { organiser: 'Anna' })).toBe('Anna is organising · 1 person joined');
+  expect(tn('join.summary', 4, { organiser: 'Anna' })).toBe('Anna is organising · 4 people joined');
+  expect(tn('exchange.summary', 5, { budget: 'any budget', date: '20 Dec' })).toBe('5 people joined · any budget · gifts by 20 Dec');
 });

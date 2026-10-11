@@ -1,7 +1,9 @@
 // Dev-only stand-in for the backend. Every handler is typed against the real endpoint, so a shape change in tgcloud/
-// fails `bun run typecheck` here. Flags (query string): ?as=member (waiting room as a non-organiser), ?blocked.
+// fails `bun run typecheck` here. Flags (query string): ?as=member (waiting room as a non-organiser), ?blocked,
+// ?few (exchange 1 has 2 members: the draw is disabled), ?unjoined (the organiser has not joined exchange 1),
+// ?race (the first draw of exchange 1 answers ALREADY_DRAWN).
 // Exchanges: 1 waiting (code K7Q4MX), 2 drawn, first view "see" (code DRW234), 3 drawn past its deadline with one
-// overdue Santa (code LATE23), 4 closed (code CLS234).
+// overdue Santa (code LATE23), 4 closed (code CLS234), 5 drawn but the assignments were never written (code PEND23).
 
 /**
  * @typedef {{
@@ -35,6 +37,8 @@
 const DAY = 86_400_000;
 const flags = new URLSearchParams(location.search);
 const asMember = flags.get('as') === 'member';
+const few = flags.has('few');
+const unjoined = flags.has('unjoined') && !asMember;
 
 /** @param {number} days from today, may be negative */
 const day = (days) => new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
@@ -43,7 +47,7 @@ const ME = 101; // the organiser of exchange 1; "as=member" plays 102 instead
 const myId = asMember ? 102 : ME;
 const GIFTEE = asMember ? 'Chloe' : 'Boris'; // never yourself
 /** Single source for home and getExchange; "as=member" is a non-organiser everywhere. @param {number} id */
-const organiserOf = (id) => !asMember && (id === 1 || id === 3);
+const organiserOf = (id) => !asMember && (id === 1 || id === 3 || id === 5);
 
 /** @type {NonNullable<ExchangeView['me']>} */
 const myDetails = {
@@ -64,9 +68,16 @@ const EX = {
   1: { name: 'Office Secret Santa', code: 'K7Q4MX', status: 'open', budget: { kind: 'range', min: 1000, max: 3000, currency: 'RUB' }, deadline: day(20) },
   2: { name: 'Family Christmas', code: 'DRW234', status: 'drawn', budget: { kind: 'max', min: null, max: 50, currency: 'EUR' }, deadline: day(12) },
   3: { name: 'Book Club Swap', code: 'LATE23', status: 'drawn', budget: { kind: 'min', min: 20, max: null, currency: 'EUR' }, deadline: day(-10) },
+  5: { name: 'Neighbours Swap', code: 'PEND23', status: 'drawn', budget: { kind: 'max', min: null, max: 30, currency: 'EUR' }, deadline: day(15) },
   4: { name: 'Class of 2019', code: 'CLS234', status: 'closed', budget: { kind: 'any', min: null, max: null, currency: null }, deadline: day(-50) },
 };
 
+let pending5 = true; // exchange 5: the draw crashed before inserting; the organiser's draw call finishes it
+let race = flags.has('race');
+/** @type {Set<number>} */
+const removed = new Set();
+/** @param {number} id */
+const peopleOf = (id) => PEOPLE.filter((p) => !removed.has(p.userId) && !(id === 1 && ((few && p.userId > 102) || (unjoined && p.userId === ME))));
 let seen2 = false; // exchange 2 shows as "see recipient" on home until its giftee tab was opened
 let sent2 = false;
 let received2 = false;
@@ -82,12 +93,13 @@ function exchangeView(id) {
   const ex = EX[id];
   if (!ex) throw { code: 'NOT_FOUND' };
   const open = ex.status === 'open';
-  const live = ex.status === 'drawn';
+  const drawPending = id === 5 && pending5;
+  const live = ex.status === 'drawn' && !drawPending; // assignments exist
   const isOrganiser = organiserOf(id);
   const uid = myId;
   /** @type {GiftStatus[]} */
   const gifts = id === 2 ? ['received', 'on_way', 'not_sent', 'on_way', 'not_sent'] : id === 3 ? ['received', 'not_sent', 'on_way', 'received', 'on_way'] : ['received', 'received', 'received', 'received', 'received'];
-  const you = id === 1 || live; // closed exchanges keep no personal data
+  const you = (id === 1 && !unjoined) || id === 5 || live; // closed exchanges keep no personal data
   /** @type {OverdueRow[]} */
   const overdue = id === 3 && isOrganiser
     ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: 'chloe_k' }]
@@ -100,9 +112,9 @@ function exchangeView(id) {
     inviteLink: `https://t.me/secret_santa_bot?startapp=${ex.code}`,
     status: ex.status, budget: ex.budget, deadline: ex.deadline,
     isOrganiser, organiserName: 'Anna',
-    members: PEOPLE.map((p) => ({ userId: p.userId, nickname: p.nickname, isMe: p.userId === uid, isOrganiser: p.userId === ME, tag: p.tag })),
+    members: peopleOf(id).map((p) => ({ userId: p.userId, nickname: p.nickname, isMe: p.userId === uid, isOrganiser: p.userId === ME, tag: p.tag })),
     me: you ? myDetails : null,
-    drawPending: false,
+    drawPending,
     giftee: live
       ? {
           nickname: GIFTEE, address: '5 Birch Lane\nShelbyville 54321', wishMode: 'ideas',
@@ -112,7 +124,7 @@ function exchangeView(id) {
       : null,
     myGift,
     // my own row is what myGift says, so the two tabs never disagree
-    progress: open ? [] : PEOPLE.map((p, i) => ({ userId: p.userId, nickname: p.nickname, gift: p.userId === uid && myGift ? myGift.status : gifts[i] })),
+    progress: open || drawPending ? [] : PEOPLE.map((p, i) => ({ userId: p.userId, nickname: p.nickname, gift: p.userId === uid && myGift ? myGift.status : gifts[i] })),
     overdue,
   };
 }
@@ -127,7 +139,7 @@ const handlers = {
         : [],
     },
     exchanges: [
-      { id: 1, name: EX[1].name, status: 'open', view: 'waiting', isOrganiser: organiserOf(1), memberCount: 5 },
+      { id: 1, name: EX[1].name, status: 'open', view: 'waiting', isOrganiser: organiserOf(1), memberCount: peopleOf(1).length },
       { id: 2, name: EX[2].name, status: 'drawn', view: seen2 ? 'drawn' : 'see', isOrganiser: organiserOf(2), memberCount: 5 },
       { id: 3, name: EX[3].name, status: 'drawn', view: 'drawn', isOrganiser: organiserOf(3), memberCount: 5 },
       { id: 4, name: EX[4].name, status: 'closed', view: 'closed', isOrganiser: organiserOf(4), memberCount: 5 },
@@ -156,7 +168,21 @@ const handlers = {
   },
   createExchange: () => ({ id: 1, code: EX[1].code }),
   join: () => ({ id: 1 }),
-  draw: () => ({ ok: true }),
+  draw: ({ id }) => {
+    if (id === 5 && pending5) {
+      pending5 = false;
+      return { ok: true };
+    }
+    if (race) {
+      race = false;
+      EX[1].status = 'drawn';
+      throw { code: 'ALREADY_DRAWN' };
+    }
+    if (EX[id]?.status !== 'open') throw { code: 'ALREADY_DRAWN' };
+    if (peopleOf(id).length < 3) throw { code: 'TOO_FEW' };
+    EX[id].status = 'drawn';
+    return { ok: true };
+  },
   markSent: () => {
     sent2 = true;
     return { ok: true };
@@ -181,7 +207,10 @@ const handlers = {
   deleteExchange: () => ({ ok: true }),
   updateMyDetails: () => ({ ok: true }),
   leave: () => ({ ok: true }),
-  removeMember: () => ({ ok: true }),
+  removeMember: ({ userId }) => {
+    removed.add(userId);
+    return { ok: true };
+  },
 };
 
 /**

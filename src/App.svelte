@@ -1,11 +1,12 @@
 <script>
-  // Route switch. Exchange, chat, blocked and appeal screens arrive in Tasks 15-16; until then they show Home.
+  // Route switch. Chat, blocked and appeal screens arrive in Task 16; until then they show Home.
   import { route } from './lib/router.js';
   import { applyTheme, loadThemePref } from './lib/theme.js';
   import { backButton } from './lib/tg.js';
   import Home from './screens/Home.svelte';
   import ExchangeForm from './screens/ExchangeForm.svelte';
   import DetailsForm from './screens/DetailsForm.svelte';
+  import Exchange from './screens/Exchange.svelte';
 
   loadThemePref().then(applyTheme);
 
@@ -25,6 +26,8 @@
       <DetailsForm code={$route.params.code} />
     {:else if $route.name === 'details'}
       <DetailsForm id={$route.params.id} />
+    {:else if $route.name === 'exchange'}
+      <Exchange id={$route.params.id} />
     {:else}
       <Home />
     {/if}

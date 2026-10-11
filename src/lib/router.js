@@ -53,21 +53,56 @@ const store = writable(HOME);
 /** Subscribe-only view: `$route` in components. */
 export const route = { subscribe: store.subscribe };
 
+const hashOf = (/** @type {string} */ path) => (path.startsWith('#') ? path : '#' + path);
+
+// History trail: the hash of each entry by index, kept in history.state.n so Back/Forward land on the right slot.
+// A reload keeps the index but loses the trail, which only means backOrReplace falls back to replace.
+/** @type {string[]} */
+let trail = [];
+let at = 0;
+let replacing = false;
+
+/** Record where the browser now is. Called on every hashchange. */
+function track() {
+  const n = history.state?.n;
+  if (typeof n === 'number') at = n;
+  else {
+    if (trail.length && !replacing) at += 1;
+    history.replaceState({ n: at }, '');
+    trail.length = at + 1;
+  }
+  trail[at] = location.hash;
+  replacing = false;
+}
+
 /** @param {string} path e.g. '#/new' or '/new' */
 export function go(path) {
-  location.hash = path.startsWith('#') ? path : '#' + path;
+  location.hash = hashOf(path);
 }
 
 /** Like go, but replaces the current history entry: for redirects and after-action moves, so Back never lands on a form that bounces forward. @param {string} path */
 export function replace(path) {
-  location.replace(path.startsWith('#') ? path : '#' + path);
+  replacing = hashOf(path) !== location.hash; // replacing with the same hash fires no hashchange
+  location.replace(hashOf(path));
+}
+
+/** After saving a form: Back to `path` if that is the previous entry (so Back is not a dead step later), else replace the form's entry with it. @param {string} path */
+export function backOrReplace(path) {
+  if (at > 0 && trail[at - 1] === hashOf(path)) history.back();
+  else replace(path);
 }
 
 /** Call once at launch. A start param only decides where the app opens, never later navigation. */
 export function initRouter() {
   const target = fromStartParam(startParam());
   if (target) history.replaceState(null, '', target);
-  const sync = () => store.set(parse(location.hash));
+  trail = [];
+  at = history.state?.n ?? 0;
+  const sync = () => {
+    track();
+    store.set(parse(location.hash));
+  };
   addEventListener('hashchange', sync);
-  sync();
+  track();
+  store.set(parse(location.hash));
 }

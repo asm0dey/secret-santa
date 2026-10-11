@@ -22,5 +22,5 @@ export const errorText = (code) => {
 };
 
 const plural = new Intl.PluralRules(lang);
-/** Count-dependent text: keys `<base>.one|few|many|other`. @param {string} base @param {number} count */
-export const tn = (base, count) => t(`${base}.${plural.select(count)}`, { count });
+/** Count-dependent text: keys `<base>.one|few|many|other`. @param {string} base @param {number} count @param {Record<string, string | number>} [params] */
+export const tn = (base, count, params) => t(`${base}.${plural.select(count)}`, { ...params, count });

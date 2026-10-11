@@ -1,8 +1,8 @@
 <script>
   // Join (#/join/:code) and edit my details (#/x/:id/details).
   import { call } from '../lib/api.js';
-  import { replace } from '../lib/router.js';
-  import { t, errorText } from '../lib/i18n.js';
+  import { replace, backOrReplace } from '../lib/router.js';
+  import { t, tn, errorText } from '../lib/i18n.js';
   import { requestWriteAccess, wa } from '../lib/tg.js';
   import Segmented from '../components/Segmented.svelte';
 
@@ -83,7 +83,7 @@
         replace(`#/x/${res.id}`);
       } else {
         await call('updateMyDetails', { id: Number(id), details });
-        replace(`#/x/${id}`);
+        backOrReplace(`#/x/${id}`);
       }
     } catch (err) {
       const c = /** @type {{ code?: string }} */ (err).code;
@@ -115,7 +115,7 @@
     {#if exchange}
       <div class="rounded-box bg-base-200 p-3">
         <p class="font-semibold">{exchange.name}</p>
-        <p class="text-sm opacity-70">{t('join.summary', { organiser: exchange.organiserName, count: exchange.memberCount })}</p>
+        <p class="text-sm opacity-70">{tn('join.summary', exchange.memberCount, { organiser: exchange.organiserName })}</p>
       </div>
     {/if}
 
