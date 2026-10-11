@@ -68,7 +68,7 @@ test('31 days after the deadline any endpoint closes it, sorrys the giftees, tel
   expect(photos().length).toBe(3);
   for (const a of [a2, a3, a4]) {
     const p = photos().find((c) => c.params.chat_id === a.gifteeId);
-    expect(p?.params.photo).toEndWith('/sorry.png');
+    expect(p?.params.photo).toEndWith('/sorry.jpg');
     expect(p?.params.caption).toContain(await nick(a.gifteeId));
     expect(p?.params.caption).not.toContain(await nick(a.santaId));
     expect(p?.params.caption).toContain('First1001'); // organiser is not a member: Telegram first name

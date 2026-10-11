@@ -67,7 +67,7 @@ async function gather(ex) {
       }
     }
     for (const { a, lang, giftee } of plan) {
-      await sendPhoto(a.gifteeId, APP_URL + '/sorry.png', t(lang, 'sorry', { name: giftee, exchange, organiser }));
+      await sendPhoto(a.gifteeId, APP_URL + '/sorry.jpg', t(lang, 'sorry', { name: giftee, exchange, organiser }));
     }
   };
 }
