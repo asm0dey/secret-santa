@@ -22,6 +22,7 @@
 - Bot notifications never contain a giftee's/Santa's name or chat text, except: organiser's overdue/closing messages name the not-sent Santa; appeal messages to the organiser name the appellant.
 - Languages: `ru` if Telegram `language_code` starts with `ru`, else `en`; every user-visible string (app + bot) exists in both.
 - Deadline is a `YYYY-MM-DD` date; it passes at the end of that day UTC (`Date.parse(d + 'T00:00:00Z') + 86_400_000`); auto-close 30 days after that.
+- Type checking: JSDoc + `checkJs`; `bun run typecheck` exits 0 before every commit from Task 7b on (front-end: `svelte-check`, added in Task 13).
 - Themes: `auto` (default) | `light` | `dark` | `christmas`, per user, stored in Telegram `CloudStorage` key `theme`.
 - Invite link: `https://t.me/<BOT_USERNAME>?startapp=<CODE>`; code is 6 chars from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, displayed `XXX-XXX`.
 
@@ -210,6 +211,29 @@ Bot copy: `drawn` — en `<b>Names are drawn for "{exchange}"</b>\n{organiser} s
 
 - [ ] **Step 1: Failing tests:** 5 members → 5 assignment rows satisfying the pairing invariant, status `drawn`, exactly 5 `sendMessage` calls, and no message text contains any member nickname other than the organiser's; second `draw` → `ALREADY_DRAWN` and still 5 messages total; `Promise.all([draw(), draw()])` → one success, one `ALREADY_DRAWN`, 5 assignments; 2 members → `TOO_FEW`; non-organiser → `FORBIDDEN`.
 - [ ] **Step 2–4:** FAIL → implement → PASS. **Step 5:** Commit `feat: draw`.
+
+### Task 7b: Type checking (user request, added mid-plan)
+
+The user chose: stay on JavaScript, but add type checking via JSDoc + `checkJs` — no build step, deploy unchanged.
+
+**Files:**
+- Modify: `jsconfig.json` (keep the existing `paths` for `sdk`/`sdk/db`), `package.json` (script `typecheck`)
+- Create: `tgcloud/lib/types.js` (JSDoc `@typedef`s only, no runtime code)
+- Modify: every `.js` under `tgcloud/`, `test/`, `tests/` as needed to pass
+
+**Requirements:**
+- `~/.bun/bin/bun add -d typescript @types/bun`; `"typecheck": "tsc -p jsconfig.json"`.
+- jsconfig `compilerOptions`: `checkJs: true`, `noEmit: true`, `strict: true`, `module: "esnext"`, `moduleResolution: "bundler"`, `target: "es2022"`, `types: ["bun"]`, `allowJs: true`; `include`: `tgcloud`, `test`, `tests`. (`src/` and Svelte get `svelte-check` in Task 13.)
+- `types.js` defines the shared shapes and the endpoints use them via `/** @typedef {import('../lib/types.js').X} X */` or `@param`/`@returns`: `Me` (enter's return), `Budget` ({kind:'any'|'max'|'min'|'range', min:number|null, max:number|null, currency:string|null}), `Details` (join input), `Button` (notify button union: `{text, app}` | `{text, url}` | `{text, data}`), `ErrCode`, `Lang` ('en'|'ru'), `EndpointCtx` ({ initData: { user: TgUser, start_param?: string } }), `TgUser`.
+- Every endpoint's default export gets `@param {…} input` and `@param {EndpointCtx} ctx` and `@returns`.
+- Fix real errors the checker finds (report each one that was a real bug, not just an annotation). Use `// @ts-expect-error` only with a one-line reason, and only for fake-SDK/platform mismatches.
+- `bun run typecheck` exits 0 and `bun test` stays green.
+
+**Steps:**
+- [ ] Step 1: add deps, jsconfig options, script; run `bun run typecheck` and record the initial error count (this is the RED).
+- [ ] Step 2: add `types.js` and annotations; fix errors until 0.
+- [ ] Step 3: `bun run typecheck` → exit 0; `bun test` → all pass.
+- [ ] Step 4: commit `chore: type checking with JSDoc + checkJs`.
 
 ### Task 8: After the draw — giftee, my gift, progress, sent, received
 
