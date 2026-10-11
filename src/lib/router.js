@@ -58,6 +58,11 @@ export function go(path) {
   location.hash = path.startsWith('#') ? path : '#' + path;
 }
 
+/** Like go, but replaces the current history entry: for redirects and after-action moves, so Back never lands on a form that bounces forward. @param {string} path */
+export function replace(path) {
+  location.replace(path.startsWith('#') ? path : '#' + path);
+}
+
 /** Call once at launch. A start param only decides where the app opens, never later navigation. */
 export function initRouter() {
   const target = fromStartParam(startParam());

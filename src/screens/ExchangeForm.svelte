@@ -1,7 +1,7 @@
 <script>
   // Create (#/new) and edit (#/x/:id/edit). After the draw only the deadline can change.
   import { call } from '../lib/api.js';
-  import { go } from '../lib/router.js';
+  import { replace } from '../lib/router.js';
   import { t, lang, errorText } from '../lib/i18n.js';
   import Segmented from '../components/Segmented.svelte';
 
@@ -28,31 +28,34 @@
   let max = $state('');
   let currency = $state(defaultCurrency);
   let deadline = $state('');
-  let origDeadline = '';
+  /** @type {{ name?: string, min?: string, max?: string, deadline?: string }} */
+  let fieldErrors = $state({});
   let drawn = $state(false);
   let ready = $state(false);
   let error = $state('');
+  let loadCode = $state('');
   let busy = $state(false);
 
   const currencies = $derived(currencyList(currency));
-  // An existing deadline may already be today or past: let an untouched date stay valid.
-  const minDate = $derived(origDeadline && origDeadline < tomorrow ? origDeadline : tomorrow);
 
   async function load() {
-    error = '';
+    loadCode = '';
     try {
       const ex = await call('getExchange', { id: Number(id) });
       if (!ex.isOrganiser) throw { code: 'FORBIDDEN' };
+      if (ex.status === 'closed') throw { code: 'CLOSED' };
       name = ex.name;
       kind = ex.budget.kind;
       min = ex.budget.min == null ? '' : String(ex.budget.min);
       max = ex.budget.max == null ? '' : String(ex.budget.max);
       currency = ex.budget.currency ?? defaultCurrency;
-      deadline = origDeadline = ex.deadline ?? '';
+      // The server refuses a past deadline: make the organiser pick a new one instead of resubmitting the old.
+      if (ex.deadline && ex.deadline >= tomorrow) deadline = ex.deadline;
+      else fieldErrors = { deadline: t('create.deadlinePast') };
       drawn = ex.status !== 'open';
       ready = true;
     } catch (e) {
-      error = errorText(/** @type {{ code?: string }} */ (e).code);
+      loadCode = /** @type {{ code?: string }} */ (e).code ?? 'INTERNAL';
     }
   }
   // The screen is remounted for every route, so props are read once at start.
@@ -61,8 +64,29 @@
     else ready = true;
   })();
 
-  /** @param {string} s */
-  const amount = (s) => (/^\d+$/.test(s.replace(/\s/g, '')) ? Number(s.replace(/\s/g, '')) : NaN);
+  /** @param {string} s Whole numbers only, spaces allowed as thousands separators; NaN otherwise. */
+  const amount = (s) => {
+    const n = /^\d+$/.test(s.replace(/\s/g, '')) ? Number(s.replace(/\s/g, '')) : NaN;
+    return Number.isSafeInteger(n) ? n : NaN;
+  };
+
+  function validate() {
+    /** @type {typeof fieldErrors} */
+    const e = {};
+    if (!drawn) {
+      if (!name.trim()) e.name = t('common.required');
+      if (kind !== 'any') {
+        const lo = amount(min), hi = amount(max);
+        if (kind !== 'max' && !(lo > 0)) e.min = t('create.amountInvalid');
+        if (kind !== 'min' && !(hi > 0)) e.max = t('create.amountInvalid');
+        if (kind === 'range' && !e.min && !e.max && lo > hi) e.max = t('create.rangeInvalid');
+      }
+    }
+    if (!deadline) e.deadline = t('common.required');
+    else if (deadline < tomorrow) e.deadline = t('create.deadlinePast');
+    fieldErrors = e;
+    return Object.keys(e).length === 0;
+  }
 
   function budget() {
     if (kind === 'any') return { kind, min: null, max: null, currency: null };
@@ -72,15 +96,16 @@
   /** @param {SubmitEvent} e */
   async function submit(e) {
     e.preventDefault();
+    if (!validate()) return;
     busy = true;
     error = '';
     try {
       if (!id) {
-        const res = await call('createExchange', { name, budget: budget(), deadline });
-        go(`#/join/${res.code}`);
+        const res = await call('createExchange', { name: name.trim(), budget: budget(), deadline });
+        replace(`#/join/${res.code}`);
       } else {
-        await call('updateExchange', drawn ? { id: Number(id), deadline } : { id: Number(id), name, budget: budget(), deadline });
-        go(`#/x/${id}`);
+        await call('updateExchange', drawn ? { id: Number(id), deadline } : { id: Number(id), name: name.trim(), budget: budget(), deadline });
+        replace(`#/x/${id}`);
       }
     } catch (err) {
       error = errorText(/** @type {{ code?: string }} */ (err).code);
@@ -90,26 +115,41 @@
   }
 </script>
 
+{#snippet problem(/** @type {string} */ field, /** @type {string | undefined} */ msg)}
+  {#if msg}<p id="{field}-error" class="label whitespace-normal text-error" role="alert">{msg}</p>{/if}
+{/snippet}
+
 <div class="flex flex-col gap-4">
   <h1 class="text-2xl font-bold">{t(id ? 'create.editTitle' : 'create.title')}</h1>
 
   {#if !ready}
-    {#if error}
+    {#if loadCode}
       <div class="alert alert-error alert-soft" role="alert">
-        <span>{error}</span>
-        <button class="btn btn-sm" onclick={load}>{t('common.retry')}</button>
+        <span>{errorText(loadCode)}</span>
+        {#if loadCode === 'INTERNAL'}<button class="btn btn-sm" onclick={load}>{t('common.retry')}</button>{/if}
       </div>
     {:else}
       <div class="flex justify-center p-6"><span class="loading loading-spinner loading-lg" role="status" aria-label={t('common.loading')}></span></div>
     {/if}
   {:else}
-    <form class="flex flex-col gap-4" onsubmit={submit}>
+    <form class="flex flex-col gap-4" novalidate onsubmit={submit}>
       {#if drawn}
         <p class="opacity-80">{t('create.deadlineOnly')}</p>
       {:else}
         <div class="fieldset">
           <label class="fieldset-legend" for="name">{t('create.name')}</label>
-          <input id="name" class="input w-full" placeholder={t('create.namePlaceholder')} maxlength="60" required bind:value={name} />
+          <input
+            id="name"
+            class="input w-full"
+            placeholder={t('create.namePlaceholder')}
+            maxlength="60"
+            required
+            aria-invalid={fieldErrors.name ? 'true' : undefined}
+            aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+            oninput={() => (fieldErrors.name = undefined)}
+            bind:value={name}
+          />
+          {@render problem('name', fieldErrors.name)}
         </div>
 
         <Segmented legend={t('create.budget')} options={kindOptions} bind:value={kind} />
@@ -119,13 +159,33 @@
             {#if kind !== 'max'}
               <div class="fieldset min-w-0">
                 <label class="fieldset-legend" for="min">{t(kind === 'range' ? 'create.budget.minAmount' : 'create.budget.amount')}</label>
-                <input id="min" class="input w-full" inputmode="numeric" pattern="[0-9 ]*" required bind:value={min} />
+                <input
+                  id="min"
+                  class="input w-full"
+                  inputmode="numeric"
+                  required
+                  aria-invalid={fieldErrors.min ? 'true' : undefined}
+                  aria-describedby={fieldErrors.min ? 'min-error' : undefined}
+                  oninput={() => (fieldErrors.min = undefined)}
+                  bind:value={min}
+                />
+                {@render problem('min', fieldErrors.min)}
               </div>
             {/if}
             {#if kind !== 'min'}
               <div class="fieldset min-w-0">
                 <label class="fieldset-legend" for="max">{t(kind === 'range' ? 'create.budget.maxAmount' : 'create.budget.amount')}</label>
-                <input id="max" class="input w-full" inputmode="numeric" pattern="[0-9 ]*" required bind:value={max} />
+                <input
+                  id="max"
+                  class="input w-full"
+                  inputmode="numeric"
+                  required
+                  aria-invalid={fieldErrors.max ? 'true' : undefined}
+                  aria-describedby={fieldErrors.max ? 'max-error' : undefined}
+                  oninput={() => (fieldErrors.max = undefined)}
+                  bind:value={max}
+                />
+                {@render problem('max', fieldErrors.max)}
               </div>
             {/if}
             <div class="fieldset min-w-0">
@@ -140,7 +200,18 @@
 
       <div class="fieldset">
         <label class="fieldset-legend" for="deadline">{t('create.deadline')}</label>
-        <input id="deadline" class="input w-full" type="date" min={minDate} required bind:value={deadline} />
+        <input
+          id="deadline"
+          class="input w-full"
+          type="date"
+          min={tomorrow}
+          required
+          aria-invalid={fieldErrors.deadline ? 'true' : undefined}
+          aria-describedby={fieldErrors.deadline ? 'deadline-error' : undefined}
+          oninput={() => (fieldErrors.deadline = undefined)}
+          bind:value={deadline}
+        />
+        {@render problem('deadline', fieldErrors.deadline)}
         <p class="label whitespace-normal">{t('create.deadlineHint')}</p>
       </div>
 

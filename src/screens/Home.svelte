@@ -1,7 +1,7 @@
 <script>
   import { call } from '../lib/api.js';
-  import { go } from '../lib/router.js';
-  import { t, errorText } from '../lib/i18n.js';
+  import { go, replace } from '../lib/router.js';
+  import { t, tn, errorText } from '../lib/i18n.js';
   import { THEME_PREFS, applyTheme, loadThemePref, mirroredPref, saveThemePref } from '../lib/theme.js';
   import { normalizeCode } from '../../tgcloud/lib/code.js';
   import Segmented from '../components/Segmented.svelte';
@@ -26,7 +26,7 @@
     loadError = '';
     try {
       const home = await call('home');
-      if (home.me.blocks.length) return go('#/blocked');
+      if (home.me.blocks.length) return replace('#/blocked');
       data = home;
     } catch (e) {
       loadError = errorText(/** @type {{ code?: string }} */ (e).code);
@@ -60,9 +60,6 @@
       busy = false;
     }
   }
-
-  /** @param {{ isOrganiser: boolean, memberCount: number }} ex */
-  const subtitle = (ex) => [ex.isOrganiser && t('common.creator'), t('home.members', { count: ex.memberCount })].filter(Boolean).join(' · ');
 </script>
 
 <div class="flex flex-col gap-5">
@@ -85,7 +82,10 @@
         <li class="list-row relative items-center">
           <div class="list-col-grow min-w-0">
             <a class="block truncate font-semibold after:absolute after:inset-0" href={`#/x/${ex.id}`}>{ex.name}</a>
-            <div class="text-sm opacity-70">{subtitle(ex)}</div>
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm opacity-70">
+              <span class="whitespace-nowrap">{tn('home.members', ex.memberCount)}</span>
+              {#if ex.isOrganiser}<span class="badge badge-soft badge-sm">{t('common.creator')}</span>{/if}
+            </div>
           </div>
           <span class={['badge shrink-0 whitespace-nowrap', CHIP[ex.view]]}>{t(`home.status.${ex.view}`)}</span>
         </li>
@@ -102,7 +102,6 @@
         placeholder={t('home.codePlaceholder')}
         autocomplete="off"
         autocapitalize="characters"
-        maxlength="7"
         aria-invalid={codeError ? 'true' : undefined}
         aria-describedby={codeError ? 'code-error' : undefined}
         bind:value={code}

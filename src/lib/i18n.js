@@ -20,3 +20,7 @@ export const errorText = (code) => {
   const key = `errors.${code}`;
   return t(key in en ? key : 'errors.INTERNAL');
 };
+
+const plural = new Intl.PluralRules(lang);
+/** Count-dependent text: keys `<base>.one|few|many|other`. @param {string} base @param {number} count */
+export const tn = (base, count) => t(`${base}.${plural.select(count)}`, { count });

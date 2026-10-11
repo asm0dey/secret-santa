@@ -3,7 +3,7 @@ import { ERR } from '../tgcloud/lib/errors.js';
 import { resolveTheme } from '../src/lib/theme.js';
 import en from '../src/lib/strings/en.js';
 import ru from '../src/lib/strings/ru.js';
-import { parse, fromStartParam } from '../src/lib/router.js';
+import { parse, fromStartParam, replace } from '../src/lib/router.js';
 
 test('theme: pref + scheme resolve to a daisyUI theme', () => {
   expect(resolveTheme('auto', 'dark')).toBe('tgdark');
@@ -99,4 +99,25 @@ test('theme: a pref picked while loading is not overwritten by the loaded one', 
   } finally {
     delete g.localStorage;
   }
+});
+
+test('router: replace swaps the history entry instead of pushing one', () => {
+  const g = /** @type {any} */ (globalThis);
+  /** @type {string[]} */
+  const calls = [];
+  g.location = { hash: '#/join/K7Q4MX', replace: (/** @type {string} */ u) => calls.push(u) };
+  try {
+    replace('#/x/5');
+    replace('/blocked');
+    expect(calls).toEqual(['#/x/5', '#/blocked']);
+    expect(g.location.hash).toBe('#/join/K7Q4MX'); // untouched: no assignment (which would push)
+  } finally {
+    delete g.location;
+  }
+});
+
+test('i18n: member count wording follows plural rules', async () => {
+  const { tn } = await import('../src/lib/i18n.js');
+  expect(tn('home.members', 1)).toBe('1 person');
+  expect(tn('home.members', 5)).toBe('5 people');
 });
