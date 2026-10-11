@@ -10,9 +10,11 @@ export const makeT = (dict) => (lang, key, params = {}) => {
 export const BOT = {
   en: {
     start: 'Secret Santa: draw names with friends, right here in Telegram.',
+    exchangeCancelled: '"{exchange}" was cancelled by its organiser.',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
+    exchangeCancelled: 'Обмен «{exchange}» отменён организатором.',
   },
 };
 
