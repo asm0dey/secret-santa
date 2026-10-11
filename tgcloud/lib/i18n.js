@@ -29,6 +29,13 @@ export const BOT = {
     fromOrganiser: '<b>Message from {organiser}, organiser of "{exchange}"</b>\n{text}',
     btnReplyOrganiser: 'Reply to {organiser}',
     btnOpenGiftee: 'Open my giftee',
+    sorry: '<b>We\'re so sorry, {name}</b>\n"{exchange}" has closed, and your gift never made it to you. That isn\'t how Secret Santa should feel, and it\'s not your fault.\n\nWe\'ve let {organiser}, the organiser, know. Thank you for being part of it. We hope next year brings you the best gift under the tree.',
+    closedSummary: '<b>"{exchange}" has closed</b>\n{received} of {total} gifts arrived.',
+    closedNoGift: '{giftee} never received a gift. Their Santa was <b>{santa}</b>, who never marked it as sent. You can message {santa}, or block them from Secret Santa so they can\'t create or join exchanges again.',
+    closedLost: '{giftee}\'s gift was marked as sent but never arrived. It may have been lost in the post.',
+    btnBlock: 'Block {santa}',
+    btnLetGo: 'Let it go',
+    btnMessage: 'Message {santa}',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
@@ -47,6 +54,13 @@ export const BOT = {
     fromOrganiser: '<b>Сообщение от {organiser}, организатора обмена «{exchange}»</b>\n{text}',
     btnReplyOrganiser: 'Ответить {organiser}',
     btnOpenGiftee: 'Кому я дарю',
+    sorry: '<b>Нам очень жаль, {name}</b>\nОбмен «{exchange}» завершён, а ваш подарок так и не пришёл. Тайный Санта не должен так заканчиваться, и вашей вины здесь нет.\n\nМы сообщили организатору, {organiser}. Спасибо, что участвовали. Пусть в следующем году под ёлкой вас ждёт самый лучший подарок.',
+    closedSummary: '<b>Обмен «{exchange}» завершён</b>\nДошло подарков: {received} из {total}.',
+    closedNoGift: '{giftee} так и не получил(а) подарок. Санта — <b>{santa}</b>, он(а) так и не отметил(а) отправку. Вы можете написать {santa} или заблокировать в Тайном Санте, чтобы он(а) больше не мог(ла) создавать обмены и участвовать в них.',
+    closedLost: 'Подарок для {giftee} был отправлен, но так и не дошёл. Возможно, он потерялся на почте.',
+    btnBlock: 'Заблокировать {santa}',
+    btnLetGo: 'Оставить как есть',
+    btnMessage: 'Написать {santa}',
   },
 };
 
