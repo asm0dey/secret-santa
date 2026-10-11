@@ -25,7 +25,7 @@ export const exchanges = table('exchanges', {
   drawToken: text('draw_token'), // random value written by the request that wins the open -> drawn flip (and again by the one that wins drawn -> closed)
   closedAt: integer('closed_at'),
   createdAt: integer('created_at'),
-});
+}, (t) => [index('exchanges_status_close_at').on(t.status, t.closeAt)]);
 
 export const members = table('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -60,7 +60,7 @@ export const messages = table('messages', {
   fromSanta: integer('from_santa'),
   text: text('text'),
   createdAt: integer('created_at'),
-}, (t) => [index('messages_assignment').on(t.assignmentId)]);
+}, (t) => [index('messages_assignment').on(t.assignmentId), index('messages_exchange').on(t.exchangeId)]);
 
 export const blocks = table('blocks', {
   id: integer('id').primaryKey({ autoIncrement: true }),

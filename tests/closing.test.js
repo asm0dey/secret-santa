@@ -146,24 +146,48 @@ const raw = async (i, status) => {
   return /** @type {number} */ ((await db.select().from(exchanges).where(eq(exchanges.code, `C${i}`)).get())?.id);
 };
 
-test('at most 5 exchanges close per call', async () => {
-  for (let i = 0; i < 7; i++) await raw(i, 'drawn');
+test('one exchange closes per call, oldest first', async () => {
+  const late = await raw(1, 'drawn');
+  const early = await raw(2, 'drawn');
+  await db.update(exchanges).set({ closeAt: Date.parse('2027-01-10T00:00:00Z') }).where(eq(exchanges.id, early)).run();
   setNow(AFTER);
   await poke();
-  const st = async () => (await db.select().from(exchanges).all()).filter((e) => e.status === 'closed').length;
-  expect(await st()).toBe(5);
+  expect((await loadExchange(early)).status).toBe('closed');
+  expect((await loadExchange(late)).status).toBe('drawn');
   await poke();
-  expect(await st()).toBe(7);
+  expect((await loadExchange(late)).status).toBe('closed');
 });
 
-test('a closed exchange that still holds personal data is wiped again, silently', async () => {
+test('organiser messages are sent before the giftees\' sorry photos', async () => {
+  await mk();
+  setNow(AFTER);
+  await poke();
+  const first = api.calls.findIndex((c) => c.method === 'sendPhoto');
+  const lastMsg = api.calls.map((c) => c.method).lastIndexOf('sendMessage');
+  expect(first).toBeGreaterThan(lastMsg);
+});
+
+/** @param {number} closedAt */
+async function leftovers(closedAt) {
   const id = await raw(1, 'closed');
+  await db.update(exchanges).set({ closedAt }).where(eq(exchanges.id, id)).run();
   await db.insert(members).values({ exchangeId: id, userId: 5, nickname: 'N', address: 'late write', joinedAt: 1 }).run();
   await db.insert(assignments).values({ exchangeId: id, santaId: 5, gifteeId: 6, tracking: 'LATE' }).run();
   await db.insert(messages).values({ exchangeId: id, assignmentId: 1, fromSanta: 1, text: 'x', createdAt: 1 }).run();
+}
+
+test('a recently closed exchange that still holds personal data is wiped again, silently', async () => {
+  await leftovers(T0 - 3_600_000);
   await poke();
   expect((await db.select().from(members).get())?.address).toBeNull();
   expect((await db.select().from(assignments).get())?.tracking).toBeNull();
   expect((await db.select().from(messages).all()).length).toBe(0);
   expect(api.calls.length).toBe(0);
+});
+
+test('a closed exchange older than a day is not re-wiped', async () => {
+  await leftovers(T0 - 2 * 86_400_000);
+  await poke();
+  expect((await db.select().from(members).get())?.address).toBe('late write');
+  expect((await db.select().from(messages).all()).length).toBe(1);
 });

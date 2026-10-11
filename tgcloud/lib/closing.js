@@ -51,10 +51,8 @@ async function gather(ex) {
     giftee: esc(nameIn(a.gifteeId, rows, '')), santa: nameIn(a.santaId, rows, ''), // santa stays raw: escaped where used in HTML, plain in button text
   })));
 
+  // Organiser first: if the request dies mid-send, the Block / Let it go prompts are the last thing lost.
   return async () => {
-    for (const { a, lang, giftee } of plan) {
-      await sendPhoto(a.gifteeId, APP_URL + '/sorry.png', t(lang, 'sorry', { name: giftee, exchange, organiser }));
-    }
     await send(ex.organiserId, t(orgLang, 'closedSummary', { exchange, received: asgs.length - missing.length, total: asgs.length }));
     for (const { a, giftee, santa } of plan) {
       if (a.sentAt != null) {
@@ -67,6 +65,9 @@ async function gather(ex) {
       if (!(await send(ex.organiserId, text, [row, [{ text: t(orgLang, 'btnMessage', { santa }), url: `tg://user?id=${a.santaId}` }]]))) {
         await send(ex.organiserId, text, [row]);
       }
+    }
+    for (const { a, lang, giftee } of plan) {
+      await sendPhoto(a.gifteeId, APP_URL + '/sorry.png', t(lang, 'sorry', { name: giftee, exchange, organiser }));
     }
   };
 }
