@@ -4,6 +4,8 @@ import { startParam } from './tg.js';
 
 /** @typedef {{ name: string, params: Record<string, string> }} Route */
 
+const NUM = /^\d+$/;
+
 /** @type {Route} */
 const HOME = { name: 'home', params: {} };
 
@@ -19,8 +21,8 @@ export function parse(hash) {
   if (a === 'new' && p.length === 1) return { name: 'new', params: {} };
   if (a === 'blocked' && p.length === 1) return { name: 'blocked', params: {} };
   if (a === 'join' && b && p.length === 2) return { name: 'join', params: { code: b } };
-  if (a === 'appeal' && b && p.length === 2) return { name: 'appeal', params: { blockId: b } };
-  if (a === 'x' && b) {
+  if (a === 'appeal' && b && NUM.test(b) && p.length === 2) return { name: 'appeal', params: { blockId: b } };
+  if (a === 'x' && b && NUM.test(b)) {
     if (p.length === 2) return { name: 'exchange', params: { id: b } };
     if (p.length === 3 && c === 'edit') return { name: 'edit', params: { id: b } };
     if (p.length === 3 && c === 'details') return { name: 'details', params: { id: b } };
@@ -38,7 +40,7 @@ export function parse(hash) {
  */
 export function fromStartParam(sp) {
   if (!sp) return null;
-  if (/^x\d/.test(sp)) {
+  if (/^x\d+(_|$)/.test(sp)) {
     const [head, ...rest] = sp.split('_');
     const hash = '#/' + ['x', head.slice(1), ...rest].join('/');
     return parse(hash).name === 'home' ? null : hash;

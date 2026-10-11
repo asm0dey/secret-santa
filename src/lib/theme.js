@@ -61,11 +61,41 @@ export function applyTheme(pref) {
   }
 }
 
-/** @returns {Promise<ThemePref>} */
-export async function loadThemePref() {
-  const v = await cloudGet('theme');
-  return /** @type {ThemePref | undefined} */ (THEME_PREFS.find((p) => p === v)) ?? 'auto';
+/** @param {unknown} v @returns {ThemePref} */
+const asPref = (v) => THEME_PREFS.find((p) => p === v) ?? 'auto';
+
+// localStorage mirror of the pref, read synchronously so the first paint is right (index.html does the same inline).
+// CloudStorage stays the source of truth: loadThemePref overrides it after load.
+/** @returns {ThemePref} */
+export function mirroredPref() {
+  try {
+    return asPref(localStorage.getItem('theme'));
+  } catch {
+    return 'auto';
+  }
 }
 
 /** @param {ThemePref} pref */
-export const saveThemePref = (pref) => cloudSet('theme', pref);
+function mirror(pref) {
+  try {
+    localStorage.setItem('theme', pref);
+  } catch {}
+}
+
+/** @type {ThemePref | null} */
+let chosen = null;
+
+/** The saved pref, unless the user picked one while it was loading (then theirs wins). @returns {Promise<ThemePref>} */
+export async function loadThemePref() {
+  const v = asPref(await cloudGet('theme'));
+  if (chosen) return chosen;
+  mirror(v);
+  return v;
+}
+
+/** @param {ThemePref} pref */
+export function saveThemePref(pref) {
+  chosen = pref;
+  mirror(pref);
+  return cloudSet('theme', pref);
+}

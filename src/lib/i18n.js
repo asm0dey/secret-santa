@@ -8,6 +8,7 @@ const code = wa()?.initDataUnsafe?.user?.language_code
   ?? (globalThis.location ? new URLSearchParams(location.search).get('lang') : null);
 
 export const lang = langOf(code);
+if (globalThis.document) document.documentElement.lang = lang;
 
 const tr = makeT({ en, ru });
 

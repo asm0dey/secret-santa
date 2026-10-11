@@ -41,6 +41,9 @@ const day = (days) => new Date(Date.now() + days * DAY).toISOString().slice(0, 1
 
 const ME = 101; // the organiser of exchange 1; "as=member" plays 102 instead
 const myId = asMember ? 102 : ME;
+const GIFTEE = asMember ? 'Chloe' : 'Boris'; // never yourself
+/** Single source for home and getExchange; "as=member" is a non-organiser everywhere. @param {number} id */
+const organiserOf = (id) => !asMember && (id === 1 || id === 3);
 
 /** @type {NonNullable<ExchangeView['me']>} */
 const myDetails = {
@@ -80,8 +83,8 @@ function exchangeView(id) {
   if (!ex) throw { code: 'NOT_FOUND' };
   const open = ex.status === 'open';
   const live = ex.status === 'drawn';
-  const isOrganiser = id === 1 ? !asMember : true;
-  const uid = id === 1 ? myId : ME;
+  const isOrganiser = organiserOf(id);
+  const uid = myId;
   /** @type {GiftStatus[]} */
   const gifts = id === 2 ? ['received', 'on_way', 'not_sent', 'on_way', 'not_sent'] : id === 3 ? ['received', 'not_sent', 'on_way', 'received', 'on_way'] : ['received', 'received', 'received', 'received', 'received'];
   const you = id === 1 || live; // closed exchanges keep no personal data
@@ -89,6 +92,9 @@ function exchangeView(id) {
   const overdue = id === 3 && isOrganiser
     ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: 'chloe_k' }]
     : [];
+  const myGift = live
+    ? /** @type {NonNullable<ExchangeView['myGift']>} */ ({ status: id === 2 ? (received2 ? 'received' : 'on_way') : 'not_sent', tracking: id === 2 ? 'RB987654321CN' : null, sentAt: id === 2 ? Date.now() - 2 * DAY : null })
+    : null;
   return {
     id, name: ex.name, code: ex.code, displayCode: `${ex.code.slice(0, 3)}-${ex.code.slice(3)}`,
     inviteLink: `https://t.me/secret_santa_bot?startapp=${ex.code}`,
@@ -99,15 +105,14 @@ function exchangeView(id) {
     drawPending: false,
     giftee: live
       ? {
-          nickname: 'Boris', address: '5 Birch Lane\nShelbyville 54321', wishMode: 'ideas',
+          nickname: GIFTEE, address: '5 Birch Lane\nShelbyville 54321', wishMode: 'ideas',
           wishlistUrl: 'https://example.com/boris-wishlist', wishes: 'Warm socks.\nCoffee beans.\nNo perfume.',
           sentAt: id === 2 && sent2 ? Date.now() : null, tracking: id === 2 && sent2 ? 'RB123456789CN' : null,
         }
       : null,
-    myGift: live
-      ? { status: id === 2 ? (received2 ? 'received' : 'on_way') : 'not_sent', tracking: id === 2 ? 'RB987654321CN' : null, sentAt: id === 2 ? Date.now() - 2 * DAY : null }
-      : null,
-    progress: open ? [] : PEOPLE.map((p, i) => ({ userId: p.userId, nickname: p.nickname, gift: gifts[i] })),
+    myGift,
+    // my own row is what myGift says, so the two tabs never disagree
+    progress: open ? [] : PEOPLE.map((p, i) => ({ userId: p.userId, nickname: p.nickname, gift: p.userId === uid && myGift ? myGift.status : gifts[i] })),
     overdue,
   };
 }
@@ -122,10 +127,10 @@ const handlers = {
         : [],
     },
     exchanges: [
-      { id: 1, name: EX[1].name, status: 'open', view: 'waiting', isOrganiser: !asMember, memberCount: 5 },
-      { id: 2, name: EX[2].name, status: 'drawn', view: seen2 ? 'drawn' : 'see', isOrganiser: false, memberCount: 5 },
-      { id: 3, name: EX[3].name, status: 'drawn', view: 'drawn', isOrganiser: true, memberCount: 5 },
-      { id: 4, name: EX[4].name, status: 'closed', view: 'closed', isOrganiser: false, memberCount: 5 },
+      { id: 1, name: EX[1].name, status: 'open', view: 'waiting', isOrganiser: organiserOf(1), memberCount: 5 },
+      { id: 2, name: EX[2].name, status: 'drawn', view: seen2 ? 'drawn' : 'see', isOrganiser: organiserOf(2), memberCount: 5 },
+      { id: 3, name: EX[3].name, status: 'drawn', view: 'drawn', isOrganiser: organiserOf(3), memberCount: 5 },
+      { id: 4, name: EX[4].name, status: 'closed', view: 'closed', isOrganiser: organiserOf(4), memberCount: 5 },
     ],
   }),
   findByCode: ({ code }) => {
@@ -145,7 +150,7 @@ const handlers = {
   getThread: ({ id, side }) => {
     exchangeView(id);
     return {
-      title: side === 'giftee' ? 'Boris' : null,
+      title: side === 'giftee' ? GIFTEE : null,
       messages: thread.map((m) => ({ mine: m.fromSanta === (side === 'giftee'), text: m.text, at: m.at })),
     };
   },

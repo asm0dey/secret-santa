@@ -63,3 +63,40 @@ test('router: start param maps to a hash', () => {
   expect(fromStartParam(null)).toBeNull();
   expect(fromStartParam('garbage!')).toBeNull();
 });
+
+test('router: ids must be numeric, start params only x<digits>[_tab]', () => {
+  expect(parse('#/x/abc')).toEqual({ name: 'home', params: {} });
+  expect(parse('#/x/12abc/edit')).toEqual({ name: 'home', params: {} });
+  expect(parse('#/x/1.5/gift')).toEqual({ name: 'home', params: {} });
+  expect(parse('#/appeal/abc')).toEqual({ name: 'home', params: {} });
+  expect(fromStartParam('x12abc')).toBeNull(); // not an exchange, and not a valid code either
+  expect(fromStartParam('xabc_gift')).toBeNull();
+  expect(fromStartParam('x12_nonsense')).toBeNull();
+});
+
+test('api: a synchronous throw inside the call rejects with INTERNAL', async () => {
+  const g = /** @type {any} */ (globalThis);
+  g.Telegram = { WebApp: { initData: 'x', Serverless: {} } }; // no .call
+  try {
+    const { call } = await import('../src/lib/api.js');
+    await expect(call('home')).rejects.toEqual({ code: 'INTERNAL' });
+  } finally {
+    delete g.Telegram;
+  }
+});
+
+test('theme: a pref picked while loading is not overwritten by the loaded one', async () => {
+  const g = /** @type {any} */ (globalThis);
+  const store = new Map([['theme', 'dark']]);
+  g.localStorage = { getItem: (/** @type {string} */ k) => store.get(k) ?? null, setItem: (/** @type {string} */ k, /** @type {string} */ v) => store.set(k, v) };
+  try {
+    const { loadThemePref, saveThemePref, mirroredPref } = await import('../src/lib/theme.js');
+    expect(mirroredPref()).toBe('dark');
+    const loading = loadThemePref();
+    await saveThemePref('christmas'); // user picks before the load resolves
+    expect(await loading).toBe('christmas');
+    expect(store.get('theme')).toBe('christmas');
+  } finally {
+    delete g.localStorage;
+  }
+});

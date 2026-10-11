@@ -19,9 +19,13 @@ export function call(name, input = {}) {
     );
   }
   return new Promise((resolve, reject) => {
-    /** @type {any} */ (wa()).Serverless.call(name, input, (/** @type {any} */ err, /** @type {any} */ result) => {
-      if (err) reject({ code: err.parameters?.code ?? 'INTERNAL' });
-      else resolve(result);
-    });
+    try {
+      /** @type {any} */ (wa()).Serverless.call(name, input, (/** @type {any} */ err, /** @type {any} */ result) => {
+        if (err) reject({ code: err.parameters?.code ?? 'INTERNAL' });
+        else resolve(result);
+      });
+    } catch {
+      reject({ code: 'INTERNAL' });
+    }
   });
 }
