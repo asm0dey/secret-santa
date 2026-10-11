@@ -12,7 +12,7 @@
   const MAX = 2000;
   const POLL_MS = 10_000;
 
-  /** @typedef {{ title: string | null, messages: { mine: boolean, text: string | null, at: number | null }[] }} Thread */
+  /** @typedef {{ title: string | null, exchangeName: string, messages: { mine: boolean, text: string | null, at: number | null }[] }} Thread */
   let thread = $state.raw(/** @type {Thread | null} */ (null));
   let loadCode = $state('');
   let draft = $state('');
@@ -23,13 +23,19 @@
   let end = $state();
   let shown = 0;
   let seq = 0;
+  let inflight = false;
 
   const title = $derived(side === 'santa' ? t('chat.santa') : (thread?.title ?? ''));
-  const hint = $derived(side === 'santa' ? t('chat.hintSanta') : t('chat.hintGiftee', { name: thread?.title ?? '' }));
+  const hint = $derived(side === 'santa' ? t('chat.hintSanta', { exchange: thread?.exchangeName ?? '' }) : t('chat.hintGiftee', { exchange: thread?.exchangeName ?? '', name: thread?.title ?? '' }));
   const canSend = $derived(!busy && draft.trim().length > 0);
 
-  async function load() {
+  const nearBottom = () => document.documentElement.scrollHeight - scrollY - innerHeight < 120;
+
+  /** @param {boolean} [scroll] jump to the newest message even if the reader is further up (after sending) */
+  async function load(scroll = false) {
     const n = ++seq; // an older, slower answer must not replace a newer one
+    inflight = true;
+    const follow = scroll || !thread || nearBottom(); // only pull the view down for someone already at the bottom
     try {
       const th = await call('getThread', { id: Number(id), side });
       if (n !== seq) return;
@@ -37,21 +43,25 @@
       loadCode = '';
       if (th.messages.length > shown) {
         shown = th.messages.length;
-        await tick();
-        end?.scrollIntoView({ block: 'end' });
+        if (follow) {
+          await tick();
+          end?.scrollIntoView({ block: 'end' });
+        }
       }
     } catch (e) {
       if (n !== seq) return;
       const code = /** @type {{ code?: string }} */ (e).code ?? 'INTERNAL';
       if (!thread || code !== 'INTERNAL') loadCode = code; // a failed background poll is not worth interrupting a conversation for
+    } finally {
+      if (n === seq) inflight = false;
     }
   }
 
   // Poll only while the app is visible: stop when hidden, load at once and resume when shown again.
   $effect(() => {
-    if (!visible) return;
+    if (!visible || loadCode) return; // an error like NOT_FOUND/CLOSED will not fix itself: stop asking
     load();
-    const timer = setInterval(load, POLL_MS);
+    const timer = setInterval(() => inflight || load(), POLL_MS);
     return () => clearInterval(timer);
   });
 
@@ -64,7 +74,7 @@
     try {
       await call('sendMessage', { id: Number(id), side, text: draft.trim() });
       draft = '';
-      await load();
+      await load(true);
     } catch (err) {
       sendError = errorText(/** @type {{ code?: string }} */ (err).code);
     } finally {
@@ -95,7 +105,6 @@
       {:else}
         <p class="m-auto max-w-xs text-center text-sm opacity-70">{t('chat.empty')}</p>
       {/each}
-      <div bind:this={end}></div>
     </div>
 
     <form class="sticky bottom-0 flex flex-col gap-1 bg-base-100 pt-2 pb-1" onsubmit={send}>
@@ -116,5 +125,6 @@
         </button>
       </div>
     </form>
+    <div bind:this={end}></div>
   </div>
 {/if}

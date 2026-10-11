@@ -123,7 +123,6 @@ export default {
   'giftee.surpriseHint': 'В этот раз без вишлиста. Подойдёт любой подарок в рамках бюджета.',
   'giftee.noWishlist': 'Вишлиста пока нет',
   'giftee.address': 'Куда отправить подарок',
-  'giftee.copyAddress': 'Скопировать адрес',
   'giftee.shipping': 'Отправка',
   'giftee.tracking': 'Трек-номер',
   'giftee.trackingHint': '{name} увидит его и сможет следить за посылкой',
@@ -138,7 +137,6 @@ export default {
   'gift.notSent': 'Пока не отправлен',
   'gift.onWay': 'В пути',
   'gift.received': 'Получен',
-  'gift.tracking': 'Трек-номер: {tracking}',
   'gift.messageSanta': 'Написать моему Санте',
   'gift.editMine': 'Изменить мои данные',
   'gift.markReceived': 'Я получил(а) подарок',
@@ -175,8 +173,8 @@ export default {
 
   'chat.santa': 'Ваш Тайный Санта',
   'chat.placeholder': 'Напишите сообщение',
-  'chat.hintSanta': 'Имя вашего Санты остаётся скрытым',
-  'chat.hintGiftee': '{name} не узнает, кто вы',
+  'chat.hintSanta': '{exchange} · Имя вашего Санты остаётся скрытым',
+  'chat.hintGiftee': '{exchange} · {name} не узнает, кто вы',
   'chat.empty': 'Сообщений пока нет. Поздоровайтесь: собеседник не узнает, кто вы.',
 
   'blocked.title': 'Вас заблокировали',

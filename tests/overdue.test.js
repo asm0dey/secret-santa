@@ -1,6 +1,7 @@
 import { test, expect, beforeEach } from 'bun:test';
-import { api, BotApiError, EndpointError } from 'sdk';
+import { api, db, BotApiError, EndpointError } from 'sdk';
 import { resetDb, ctxFor, setNow } from '../test/helpers.js';
+import { blocks } from '../tgcloud/schema.js';
 import createExchange from '../tgcloud/endpoints/createExchange.js';
 import join from '../tgcloud/endpoints/join.js';
 import draw from '../tgcloud/endpoints/draw.js';
@@ -8,6 +9,9 @@ import getExchange from '../tgcloud/endpoints/getExchange.js';
 import markSent from '../tgcloud/endpoints/markSent.js';
 import nudge from '../tgcloud/endpoints/nudge.js';
 import messageSanta from '../tgcloud/endpoints/messageSanta.js';
+import block from '../tgcloud/endpoints/block.js';
+import submitAppeal from '../tgcloud/endpoints/submitAppeal.js';
+import decideAppeal from '../tgcloud/endpoints/decideAppeal.js';
 
 const T0 = Date.parse('2026-10-11T12:00:00Z');
 const LATE = Date.parse('2026-12-21T00:00:01Z'); // just past the 2026-12-20 deadline
@@ -155,4 +159,24 @@ test('organiser name is escaped; the organiser need not be a member', async () =
   setNow(LATE);
   await messageSanta({ id, santaUserId: 1004, text: 'hi' }, ctxFor({ id: 1001, first_name: 'Ann <A>' }));
   expect(sent()[0].params.text).toContain('Message from Ann &lt;A&gt;,');
+});
+
+test('a blocked Santa stays in overdue with blocked:true and is no longer nudged; unblocking restores them', async () => {
+  const id = await mk();
+  setNow(LATE);
+  expect((await getExchange({ id }, ann)).overdue.every((o) => o.blocked === false)).toBe(true);
+  await block({ id, santaUserId: 1004 }, ann);
+  api.calls.length = 0;
+  const ov = (await getExchange({ id }, ann)).overdue;
+  expect(ov.length).toBe(4);
+  expect(ov.filter((o) => o.blocked).map((o) => o.santaUserId)).toEqual([1004]);
+  expect(await nudge({ id }, ann)).toEqual({ sent: 3 });
+  expect(sent().map((c) => c.params.chat_id).sort()).toEqual([1002, 1003, 1005]);
+  // the block is lifted on appeal: the Santa is overdue again and gets reminded
+  const blockId = /** @type {{ id: number }} */ (await db.select().from(blocks).get()).id;
+  await submitAppeal({ blockId, text: 'sorry' }, user(1004));
+  await decideAppeal({ blockId, decision: 'unblock' }, ann);
+  expect((await getExchange({ id }, ann)).overdue.some((o) => o.blocked)).toBe(false);
+  api.calls.length = 0;
+  expect((await nudge({ id }, ann)).sent).toBe(4);
 });

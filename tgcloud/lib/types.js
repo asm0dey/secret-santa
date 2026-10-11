@@ -28,7 +28,7 @@
 
 /** @typedef {{ userId: number, nickname: string | null, gift: GiftStatus }} ProgressRow status of the gift this member will receive */
 
-/** @typedef {{ gifteeUserId: number, gifteeName: string, santaUserId: number, santaName: string, santaUsername: string | null }} OverdueRow organiser-only: a Santa past the deadline who has not sent */
+/** @typedef {{ gifteeUserId: number, gifteeName: string, santaUserId: number, santaName: string, santaUsername: string | null, blocked: boolean }} OverdueRow organiser-only: a Santa past the deadline who has not sent; blocked: the organiser already blocked them for this exchange */
 
 /**
  * The getExchange response. `giftee`/`myGift` are null unless the exchange is drawn and the caller is in a pair;

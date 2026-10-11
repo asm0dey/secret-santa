@@ -88,6 +88,8 @@ const sent = new Map();
 let received2 = giftFlag === 'received';
 /** @type {Set<number>} */
 const appealedIds = new Set([8]);
+/** Santas the organiser blocked in this session. @type {Set<number>} */
+const blockedSantas = new Set();
 /** @type {{ fromSanta: boolean, text: string, at: number }[]} */
 const thread = flags.has('empty') ? [] : [
   { fromSanta: true, text: 'Hi! Any size preferences for the scarf?', at: Date.now() - 30 * 3600_000 },
@@ -109,7 +111,7 @@ function exchangeView(id) {
   const you = (id === 1 && !unjoined) || id === 5 || live; // closed exchanges keep no personal data
   /** @type {OverdueRow[]} */
   const overdue = id === 3 && isOrganiser
-    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: flags.get('santa') === 'nouser' ? null : 'chloe_k' }]
+    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: flags.get('santa') === 'nouser' ? null : 'chloe_k', blocked: blockedSantas.has(103) }]
     : [];
   const myGift = live
     ? /** @type {NonNullable<ExchangeView['myGift']>} */ ({ status: id === 2 ? (received2 ? 'received' : giftFlag === 'notsent' ? 'not_sent' : 'on_way') : 'not_sent', tracking: id === 2 && giftFlag !== 'notsent' ? 'RB987654321CN' : null, sentAt: id === 2 && giftFlag !== 'notsent' ? Date.now() - 2 * DAY : null })
@@ -172,8 +174,9 @@ const handlers = {
     return exchangeView(id);
   },
   getThread: ({ id, side }) => {
-    exchangeView(id);
+    const ex = exchangeView(id);
     return {
+      exchangeName: ex.name,
       title: side === 'giftee' ? GIFTEE : null,
       messages: thread.map((m) => ({ mine: m.fromSanta === (side === 'giftee'), text: m.text, at: m.at })),
     };
@@ -209,7 +212,10 @@ const handlers = {
   },
   nudge: () => ({ sent: 1 }),
   messageSanta: () => ({ ok: true, delivered: !flags.has('undelivered') }),
-  block: () => ({ ok: true }),
+  block: ({ santaUserId }) => {
+    blockedSantas.add(santaUserId);
+    return { ok: true };
+  },
   submitAppeal: ({ blockId }) => {
     appealedIds.add(blockId);
     return { ok: true };

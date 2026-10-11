@@ -1,5 +1,6 @@
 <script>
   // Progress tab (mockup 7): deadline box, who has received a gift, and the organiser's overdue box. Read-only once closed.
+  import { tick } from 'svelte';
   import { call } from '../lib/api.js';
   import { go } from '../lib/router.js';
   import { t, tn, errorText } from '../lib/i18n.js';
@@ -56,9 +57,10 @@
     blocking = o;
   }
 
-  function closeSheet() {
+  async function closeSheet() {
     compose = null;
     blocking = null;
+    await tick(); // the dialog is gone from the DOM before focus returns
     restoreTo?.focus();
   }
 
@@ -87,7 +89,7 @@
     try {
       await call('block', { id: view.id, santaUserId: o.santaUserId });
       outcome[o.santaUserId] = 'blocked';
-      await reload();
+      await reload(); // the server now says blocked:true, which survives a tab switch
     } catch (e) {
       error = errorText(/** @type {{ code?: string }} */ (e).code);
     } finally {
@@ -143,7 +145,7 @@
       <div class="flex flex-col gap-2 rounded-box border border-primary bg-base-200 p-3">
         <p class="text-sm font-semibold opacity-70">{t('progress.onlyYou')}</p>
         <p>{t('progress.overdue', { giftee: o.gifteeName, santa: o.santaName })}</p>
-        {#if outcome[o.santaUserId] === 'blocked'}
+        {#if o.blocked || outcome[o.santaUserId] === 'blocked'}
           <p class="text-sm font-semibold">{t('progress.blocked', { santa: o.santaName })}</p>
         {:else}
           <div class="flex flex-wrap gap-2">
@@ -162,7 +164,7 @@
       </div>
     {/each}
 
-    {#if view.overdue.length}
+    {#if view.overdue.some((o) => !o.blocked)}
       {#if error}<p class="text-sm text-error" role="alert">{error}</p>{/if}
       <button class="btn btn-primary btn-block" disabled={busy} onclick={nudge}>{t('progress.nudge')}</button>
       {#if nudged !== null}<p class="text-center text-sm" role="status">{tn('progress.nudged', nudged)}</p>{/if}

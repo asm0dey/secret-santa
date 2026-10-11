@@ -24,7 +24,8 @@
   const tracking = $derived(typed ?? g?.tracking ?? '');
   let busy = $state(false);
   let error = $state('');
-  const dirty = $derived(tracking.trim() !== (g?.tracking ?? ''));
+  // An empty field is no change: the server keeps the old number.
+  const dirty = $derived(tracking.trim() !== '' && tracking.trim() !== (g?.tracking ?? ''));
 
   async function markSent() {
     if (busy) return;

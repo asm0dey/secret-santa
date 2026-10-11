@@ -11,7 +11,7 @@ import { send, esc } from '../lib/notify.js';
 import { t } from '../lib/i18n.js';
 
 /**
- * Reminds every overdue Santa. The text names nobody.
+ * Reminds every overdue Santa who is not blocked. The text names nobody.
  * @param {{ id: number }} input
  * @param {import('../lib/types.js').EndpointCtx} ctx
  * @returns {Promise<{ sent: number }>}
@@ -23,7 +23,7 @@ export default async function ({ id }, ctx) {
   requireStatus(ex, 'drawn');
   if (!ex.deadline || !isPast(ex.deadline, clock.now())) fail(ERR.NOT_YET);
   let sent = 0;
-  for (const o of await overdueOf(ex)) {
+  for (const o of (await overdueOf(ex)).filter((r) => !r.blocked)) {
     const lang = (await db.select().from(users).where(eq(users.id, o.santaUserId)).get())?.lang ?? 'en';
     if (await send(o.santaUserId, t(lang, 'nudge', { exchange: esc(ex.name), deadline: ex.deadline }),
       [[{ text: t(lang, 'btnOpenGiftee'), app: `#/x/${ex.id}/giftee` }]])) sent++;

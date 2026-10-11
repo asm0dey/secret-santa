@@ -44,9 +44,9 @@ test('Santa -> giftee message is mine:false for the giftee and mine:true for the
   const { santa, giftee } = await pair(id);
   expect(await sendMessage({ id, side: 'giftee', text: '  hello <b>  ' }, user(santa))).toEqual({ ok: true });
   const g = await getThread({ id, side: 'santa' }, user(giftee));
-  expect(g).toEqual({ title: null, messages: [{ mine: false, text: 'hello <b>', at: T0 }] });
+  expect(g).toEqual({ title: null, exchangeName: 'Office <Santa>', messages: [{ mine: false, text: 'hello <b>', at: T0 }] });
   const s = await getThread({ id, side: 'giftee' }, user(santa));
-  expect(s).toEqual({ title: `Nick${giftee}`, messages: [{ mine: true, text: 'hello <b>', at: T0 }] });
+  expect(s).toEqual({ title: `Nick${giftee}`, exchangeName: 'Office <Santa>', messages: [{ mine: true, text: 'hello <b>', at: T0 }] });
   // reply
   setNow(T0 + 1000);
   await sendMessage({ id, side: 'santa', text: 'thanks' }, user(giftee));

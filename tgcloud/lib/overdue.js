@@ -1,6 +1,6 @@
 import { db } from 'sdk';
 import { eq } from 'sdk/db';
-import { assignments, members, users } from '../schema.js';
+import { assignments, members, users, blocks } from '../schema.js';
 import { clock } from './clock.js';
 import { isPast } from './dates.js';
 
@@ -12,10 +12,13 @@ import { isPast } from './dates.js';
  */
 export async function overdueOf(ex) {
   if (ex.status !== 'drawn' || !ex.deadline || !isPast(ex.deadline, clock.now())) return [];
-  const [asgs, rows] = await Promise.all([
+  const [asgs, rows, bl] = await Promise.all([
     db.select().from(assignments).where(eq(assignments.exchangeId, ex.id)).orderBy(assignments.id).all(),
     db.select().from(members).where(eq(members.exchangeId, ex.id)).all(),
+    db.select().from(blocks).where(eq(blocks.exchangeId, ex.id)).all(),
   ]);
+  // A block counts until an appeal lifts it ('unblocked').
+  const blocked = new Set(bl.filter((b) => b.decision == null || b.decision === 'kept').map((b) => b.userId));
   /** @param {number} id */
   const who = async (id) => {
     const u = await db.select().from(users).where(eq(users.id, id)).get();
@@ -25,7 +28,7 @@ export async function overdueOf(ex) {
   for (const a of asgs) {
     if (a.sentAt != null || a.receivedAt != null) continue;
     const [s, g] = [await who(a.santaId), await who(a.gifteeId)];
-    out.push({ gifteeUserId: a.gifteeId, gifteeName: g.name, santaUserId: a.santaId, santaName: s.name, santaUsername: s.username });
+    out.push({ gifteeUserId: a.gifteeId, gifteeName: g.name, santaUserId: a.santaId, santaName: s.name, santaUsername: s.username, blocked: blocked.has(a.santaId) });
   }
   return out;
 }

@@ -123,7 +123,6 @@ export default {
   'giftee.surpriseHint': 'No wishlist this time. Anything within the budget works.',
   'giftee.noWishlist': 'No wishlist yet',
   'giftee.address': 'Send the gift to',
-  'giftee.copyAddress': 'Copy address',
   'giftee.shipping': 'Shipping',
   'giftee.tracking': 'Tracking number',
   'giftee.trackingHint': '{name} sees it and can follow the parcel',
@@ -138,7 +137,6 @@ export default {
   'gift.notSent': 'Not sent yet',
   'gift.onWay': 'On its way',
   'gift.received': 'Received',
-  'gift.tracking': 'Tracking: {tracking}',
   'gift.messageSanta': 'Message my Santa',
   'gift.editMine': 'Edit my details',
   'gift.markReceived': 'I received my gift',
@@ -175,8 +173,8 @@ export default {
 
   'chat.santa': 'Your Secret Santa',
   'chat.placeholder': 'Write a message',
-  'chat.hintSanta': "Your Santa's name stays hidden",
-  'chat.hintGiftee': '{name} will not know who you are',
+  'chat.hintSanta': "{exchange} · Your Santa's name stays hidden",
+  'chat.hintGiftee': '{exchange} · {name} will not know who you are',
   'chat.empty': 'No messages yet. Say hello, they will not know who you are.',
 
   'blocked.title': 'You have been blocked',

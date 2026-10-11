@@ -7,7 +7,7 @@ import { openThread } from '../lib/thread.js';
 /**
  * @param {{ id: number, side: 'giftee' | 'santa' }} input
  * @param {import('../lib/types.js').EndpointCtx} ctx
- * @returns {Promise<{ title: string | null, messages: { mine: boolean, text: string | null, at: number | null }[] }>}
+ * @returns {Promise<{ title: string | null, exchangeName: string, messages: { mine: boolean, text: string | null, at: number | null }[] }>}
  */
 export default async function ({ id, side }, ctx) {
   const me = await enter(ctx);
@@ -20,6 +20,7 @@ export default async function ({ id, side }, ctx) {
     : null;
   return {
     title,
+    exchangeName: ex.name,
     messages: rows.map((m) => ({ mine: (m.fromSanta === 1) === (side === 'giftee'), text: m.text, at: m.createdAt })),
   };
 }
