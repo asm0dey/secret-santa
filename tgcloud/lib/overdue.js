@@ -17,8 +17,9 @@ export async function overdueOf(ex) {
     db.select().from(members).where(eq(members.exchangeId, ex.id)).all(),
     db.select().from(blocks).where(eq(blocks.exchangeId, ex.id)).all(),
   ]);
-  // A block counts until an appeal lifts it ('unblocked').
+  // A block counts until an appeal lifts it ('unblocked'); any row at all (lifted too) means no second block.
   const blocked = new Set(bl.filter((b) => b.decision == null || b.decision === 'kept').map((b) => b.userId));
+  const everBlocked = new Set(bl.map((b) => b.userId));
   /** @param {number} id */
   const who = async (id) => {
     const u = await db.select().from(users).where(eq(users.id, id)).get();
@@ -26,9 +27,9 @@ export async function overdueOf(ex) {
   };
   const out = [];
   for (const a of asgs) {
-    if (a.sentAt != null || a.receivedAt != null) continue;
+    if (a.sentAt != null || a.receivedAt != null || a.santaId === ex.organiserId) continue; // never the organiser's own gift
     const [s, g] = [await who(a.santaId), await who(a.gifteeId)];
-    out.push({ gifteeUserId: a.gifteeId, gifteeName: g.name, santaUserId: a.santaId, santaName: s.name, santaUsername: s.username, blocked: blocked.has(a.santaId) });
+    out.push({ gifteeUserId: a.gifteeId, gifteeName: g.name, santaUserId: a.santaId, santaName: s.name, santaUsername: s.username, blocked: blocked.has(a.santaId), blockable: !everBlocked.has(a.santaId) });
   }
   return out;
 }

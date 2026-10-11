@@ -4,7 +4,7 @@ import { exchanges, members, assignments, blocks, users } from '../schema.js';
 import { clock } from './clock.js';
 import { isPast } from './dates.js';
 import { ERR, fail } from './errors.js';
-import { loadExchange, requireOrganiser, requireStatus } from './access.js';
+import { loadExchange, requireOrganiser, requireStatus, requireId } from './access.js';
 import { removeMemberRow } from './membership.js';
 import { cancelExchange } from './cancel.js';
 import { send, esc } from './notify.js';
@@ -15,7 +15,10 @@ const userOf = (id) => db.select().from(users).where(eq(users.id, id)).get();
 /** @param {number} id @returns {Promise<import('./types.js').Lang>} */
 export const langFor = async (id) => /** @type {import('./types.js').Lang} */ ((await userOf(id))?.lang ?? 'en');
 /** @param {number} id */
-const loadBlock = async (id) => (await db.select().from(blocks).where(eq(blocks.id, id)).get()) ?? fail(ERR.NOT_FOUND);
+const loadBlock = async (id) => {
+  requireId(id);
+  return (await db.select().from(blocks).where(eq(blocks.id, id)).get()) ?? fail(ERR.NOT_FOUND);
+};
 /** @param {{ decision: string | null }} b */
 const isActive = (b) => b.decision == null || b.decision === 'kept';
 
@@ -29,18 +32,35 @@ async function unlessDrawn(fn) {
 // Eligibility comes from the assignment row, which survives the close wipe.
 /** @param {number} organiserId @param {number} exchangeId @param {number} santaUserId */
 export async function blockSanta(organiserId, exchangeId, santaUserId) {
+  requireId(santaUserId);
   const ex = await loadExchange(exchangeId);
   requireOrganiser(ex, organiserId);
   requireStatus(ex, 'drawn', 'closed');
+  if (santaUserId === organiserId) fail(ERR.FORBIDDEN);
+  // Before anything about the pairing: until the deadline every target gets the same answer, so sent/not sent
+  // (visible per giftee on the Progress tab) never tells the organiser who is whose Santa.
+  if (!ex.deadline || !isPast(ex.deadline, clock.now())) fail(ERR.NOT_YET);
   const a = await db.select().from(assignments)
     .where(and(eq(assignments.exchangeId, ex.id), eq(assignments.santaId, santaUserId))).get();
   if (!a || a.sentAt != null || a.receivedAt != null) fail(ERR.FORBIDDEN);
-  if (!ex.deadline || !isPast(ex.deadline, clock.now())) fail(ERR.NOT_YET);
-  const existing = await db.select().from(blocks)
-    .where(and(eq(blocks.userId, santaUserId), eq(blocks.exchangeId, ex.id))).all();
-  if (existing.some(isActive)) return; // double tap
 
-  await db.insert(blocks).values({ userId: santaUserId, organiserId, exchangeId: ex.id, exchangeName: ex.name, createdAt: clock.now() }).run();
+  // One block row per (user, exchange), ever (unique index): a lifted block is not placed again. An existing active
+  // row or a unique clash is a double tap or a concurrent tap: finish the side effects (idempotent), tell the user once.
+  /** @param {unknown} [e] */
+  const prior = async (e) => {
+    const b = await db.select().from(blocks).where(and(eq(blocks.userId, santaUserId), eq(blocks.exchangeId, ex.id))).get();
+    if (!b && e) throw e;
+    if (b && !isActive(b)) fail(ERR.FORBIDDEN);
+    return !!b;
+  };
+  let repeat = await prior();
+  if (!repeat) {
+    try {
+      await db.insert(blocks).values({ userId: santaUserId, organiserId, exchangeId: ex.id, exchangeName: ex.name, createdAt: clock.now() }).run();
+    } catch (e) {
+      repeat = await prior(e);
+    }
+  }
 
   // Undrawn exchanges only: drawn/closed memberships stay so every pairing holds.
   const organised = await db.select().from(exchanges)
@@ -51,6 +71,7 @@ export async function blockSanta(organiserId, exchangeId, santaUserId) {
     if (o?.status === 'open' && o.organiserId !== santaUserId) await unlessDrawn(() => removeMemberRow(o.id, m.id));
   }
 
+  if (repeat) return;
   const lang = await langFor(santaUserId);
   await send(santaUserId, t(lang, 'blocked', { exchange: esc(ex.name) }), [[{ text: t(lang, 'btnAppeal'), app: '#/blocked' }]]);
 }

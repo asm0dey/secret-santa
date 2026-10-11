@@ -5,7 +5,7 @@ import { enter } from '../lib/session.js';
 import { ERR, fail } from '../lib/errors.js';
 import { clock } from '../lib/clock.js';
 import { loadExchange, requireOrganiser } from '../lib/access.js';
-import { derange } from '../lib/draw.js';
+import { derange, token as newToken } from '../lib/draw.js';
 import { formatBudget } from '../lib/budget.js';
 import { budgetOf } from '../lib/exchangeFields.js';
 import { send, esc } from '../lib/notify.js';
@@ -18,7 +18,7 @@ const hasAssignments = async (exchangeId) =>
 // Step 1: win the open -> drawn flip (also fails TOO_FEW atomically: the member count is part of the condition).
 /** @param {import('../lib/types.js').Exchange} ex */
 async function flip(ex) {
-  const token = crypto.randomUUID();
+  const token = newToken();
   await db.update(exchanges).set({ status: 'drawn', drawnAt: clock.now(), drawToken: token })
     .where(and(
       eq(exchanges.id, ex.id), eq(exchanges.status, 'open'),

@@ -25,7 +25,7 @@ export const exchanges = table('exchanges', {
   drawToken: text('draw_token'), // random value written by the request that wins the open -> drawn flip (and again by the one that wins drawn -> closed)
   closedAt: integer('closed_at'),
   createdAt: integer('created_at'),
-}, (t) => [index('exchanges_status_close_at').on(t.status, t.closeAt)]);
+}, (t) => [index('exchanges_status_close_at').on(t.status, t.closeAt), index('exchanges_status_closed_at').on(t.status, t.closedAt)]);
 
 export const members = table('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -74,4 +74,4 @@ export const blocks = table('blocks', {
   appealAt: integer('appeal_at'),
   decision: text('decision'), // unblocked|kept
   decidedAt: integer('decided_at'),
-});
+}, (t) => [uniqueIndex('blocks_user_ex').on(t.userId, t.exchangeId)]); // one block per user per exchange, ever: a lifted one is not placed again

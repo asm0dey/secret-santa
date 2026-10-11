@@ -6,6 +6,7 @@ import { ERR, fail } from '../lib/errors.js';
 import { clock } from '../lib/clock.js';
 import { newCode } from '../lib/code.js';
 import { cleanName, budgetColumns, deadlineColumns } from '../lib/exchangeFields.js';
+import { isBlocked } from '../lib/membership.js';
 
 /**
  * @param {{ name: unknown, budget: unknown, deadline: unknown }} input
@@ -28,6 +29,11 @@ export default async function ({ name, budget, deadline }, ctx) {
       throw e;
     }
     const { id } = /** @type {{ id: number }} */ (await db.select({ id: exchanges.id }).from(exchanges).where(eq(exchanges.code, code)).get());
+    // A block that landed after enter(): its own cancel pass may have missed this row, so take it back here.
+    if (await isBlocked(me.id)) {
+      await db.delete(exchanges).where(eq(exchanges.id, id)).run();
+      fail(ERR.BLOCKED);
+    }
     return { id, code };
   }
 }

@@ -6,6 +6,7 @@ import { loadExchange } from './access.js';
 import { send, sendPhoto, esc } from './notify.js';
 import { t } from './i18n.js';
 import { APP_URL } from './config.js';
+import { token as newToken } from './draw.js';
 
 /** Deletes everything personal in an exchange. Idempotent. @param {number} exchangeId */
 export async function wipeExchange(exchangeId) {
@@ -19,7 +20,7 @@ export async function wipeExchange(exchangeId) {
 // it returns true for that call.
 /** @param {import('./types.js').Exchange} ex @param {'complete' | 'timeout'} reason */
 export async function closeExchange(ex, reason) {
-  const token = crypto.randomUUID(); // reuses drawToken as the "who flipped it" marker; a closed exchange is never drawn again
+  const token = newToken(); // reuses drawToken as the "who flipped it" marker; a closed exchange is never drawn again
   await db.update(exchanges).set({ status: 'closed', closedAt: clock.now(), drawToken: token })
     .where(and(eq(exchanges.id, ex.id), eq(exchanges.status, 'drawn'))).run();
   if ((await loadExchange(ex.id)).drawToken !== token) return false;
@@ -55,6 +56,7 @@ async function gather(ex) {
   return async () => {
     await send(ex.organiserId, t(orgLang, 'closedSummary', { exchange, received: asgs.length - missing.length, total: asgs.length }));
     for (const { a, giftee, santa } of plan) {
+      if (a.santaId === ex.organiserId) continue; // their own gift: nothing to block or chase
       if (a.sentAt != null) {
         await send(ex.organiserId, t(orgLang, 'closedLost', { exchange, giftee }));
         continue;

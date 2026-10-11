@@ -5,8 +5,15 @@ import { ERR, fail } from './errors.js';
 
 /** @typedef {import('./types.js').Exchange} Exchange */
 
+// Ids from input: a string like '1' would still match an integer column (SQLite affinity).
+/** @param {unknown} id @returns {asserts id is number} */
+export function requireId(id) {
+  if (!Number.isSafeInteger(id)) fail(ERR.BAD_INPUT);
+}
+
 /** @param {number} id */
 export async function loadExchange(id) {
+  requireId(id);
   const ex = await db.select().from(exchanges).where(eq(exchanges.id, id)).get();
   return ex ?? fail(ERR.NOT_FOUND);
 }

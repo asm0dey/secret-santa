@@ -4,6 +4,9 @@ export const defaultRand = () =>
     ? crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32
     : Math.random();
 
+// Unguessable-enough marker for "which request won this conditional write" (no crypto.randomUUID on the platform).
+export const token = () => Date.now().toString(36) + [0, 0, 0, 0].map(() => Math.floor(defaultRand() * 2 ** 32).toString(36)).join('-');
+
 // Random derangement: shuffle, retry while anyone draws themselves (~e tries).
 /**
  * @param {number[]} ids

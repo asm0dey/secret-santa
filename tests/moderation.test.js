@@ -302,3 +302,81 @@ test('/start (with or without payload, with bot name) replies with an Open butto
   await message({ message_id: 5, chat: { id: 5 } }, {});
   expect(api.calls.length).toBe(0);
 });
+
+test('before the deadline every block target is NOT_YET, whether the Santa marked sent or not (no pair oracle)', async () => {
+  const id = await mk();
+  await markSent({ id }, user(1003));
+  for (const s of [1002, 1003, 1004, 9999]) expect(await code(() => block({ id, santaUserId: s }, ann))).toBe('NOT_YET');
+  await callbackQuery(cq(1001, `block:${id}:1003`), {});
+  await callbackQuery(cq(1001, `block:${id}:1004`), {});
+  expect(answers()[0].params.text).toBe(answers()[1].params.text);
+  expect(await blockRows()).toEqual([]);
+});
+
+test('a block lifted on appeal cannot be placed again for the same exchange; the unique index holds one row', async () => {
+  const id = await mk();
+  const bid = await blocked(id);
+  await submitAppeal({ blockId: bid, text: 'hi' }, user(1003));
+  await decideAppeal({ blockId: bid, decision: 'unblock' }, ann);
+  api.calls.length = 0;
+  expect(await code(() => block({ id, santaUserId: 1003 }, ann))).toBe('FORBIDDEN');
+  expect((await blockRows()).length).toBe(1);
+  expect(sent().length).toBe(0);
+  await expect(async () => {
+    await db.insert(blocks).values({ userId: 1003, organiserId: 1001, exchangeId: id, createdAt: 1 }).run();
+  }).toThrow();
+});
+
+test('two concurrent blocks: one row, one message, both succeed', async () => {
+  const id = await mk();
+  setNow(LATE);
+  expect(await Promise.all([block({ id, santaUserId: 1003 }, ann), block({ id, santaUserId: 1003 }, ann)])).toEqual([{ ok: true }, { ok: true }]);
+  expect((await blockRows()).length).toBe(1);
+  expect(to(1003).length).toBe(1);
+});
+
+test('a repeated block finishes the side effects a crashed first call left undone, without a second message', async () => {
+  const id = await mk();
+  const other = await createExchange({ name: 'Other', budget: { kind: 'any' }, deadline: '2026-12-20' }, user(1005));
+  await join({ code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003));
+  setNow(LATE);
+  // the first call died right after its insert
+  await db.insert(blocks).values({ userId: 1003, organiserId: 1001, exchangeId: id, exchangeName: 'Office <Santa>', createdAt: LATE }).run();
+  api.calls.length = 0;
+  expect(await block({ id, santaUserId: 1003 }, ann)).toEqual({ ok: true });
+  expect((await mine(1003)).map((m) => m.exchangeId)).toEqual([id]);
+  expect(to(1003).length).toBe(0);
+});
+
+test('the organiser cannot block themself', async () => {
+  const { id, code: c } = await createExchange({ name: 'Self', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
+  for (const s of [1001, 1002, 1003]) await join({ code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
+  await draw({ id }, ann);
+  setNow(LATE);
+  expect(await code(() => block({ id, santaUserId: 1001 }, ann))).toBe('FORBIDDEN');
+  expect(await blockRows()).toEqual([]);
+});
+
+test('ids from input must be safe integers', async () => {
+  const id = await mk();
+  const bid = await blocked(id);
+  expect(await code(() => block({ id: /** @type {any} */ (String(id)), santaUserId: 1004 }, ann))).toBe('BAD_INPUT');
+  expect(await code(() => block({ id, santaUserId: /** @type {any} */ ('1004') }, ann))).toBe('BAD_INPUT');
+  expect(await code(() => block({ id, santaUserId: 2 ** 53 }, ann))).toBe('BAD_INPUT');
+  expect(await code(() => submitAppeal({ blockId: /** @type {any} */ (String(bid)), text: 'hi' }, user(1003)))).toBe('BAD_INPUT');
+  expect(await code(() => decideAppeal({ blockId: /** @type {any} */ ({}), decision: 'keep' }, ann))).toBe('BAD_INPUT');
+  expect((await blockRows()).length).toBe(1);
+});
+
+test('callback: a failing users lookup still answers; 16-digit ids are accepted', async () => {
+  const id = await mk();
+  setNow(LATE);
+  const orig = db.select;
+  /** @type {any} */ (db).select = () => { /** @type {any} */ (db).select = orig; throw new Error('db down'); };
+  await callbackQuery(cq(1001, `letgo:${id}:1003`), {});
+  expect(answers()[0].params.text).toBe('Done');
+  await callbackQuery(cq(1001, 'appeal:1234567890123456:keep'), {});
+  expect(answers()[1].params.text).toBe('Not found.');
+  await callbackQuery(cq(1001, 'appeal:9999999999999999:keep'), {}); // over 2^53
+  expect(answers()[2].params.text).not.toBe('Not found.');
+});

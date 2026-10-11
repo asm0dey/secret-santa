@@ -3,7 +3,8 @@
 // ?few (exchange 1 has 2 members: the draw is disabled), ?unjoined (the organiser has not joined exchange 1),
 // ?race (the first draw of exchange 1 answers ALREADY_DRAWN). After the draw: ?giftee=surprise|nowish (what exchange 2's
 // giftee wrote), ?gift=notsent|onway|received (exchange 2, my own gift), ?santa=nouser (the overdue Santa has no @username),
-// ?undelivered (messageSanta cannot deliver), ?empty (empty chat thread), ?blocked (two blocks: one appealed, one not).
+// ?undelivered (messageSanta cannot deliver), ?empty (empty chat thread), ?blocked (two blocks: one appealed, one not),
+// ?today (exchange 1's deadline is today, UTC), ?lifted (the overdue Santa's block was lifted on appeal: not blocked, not blockable again), ?chatfail (the first getThread fails with INTERNAL).
 // Exchanges: 1 waiting (code K7Q4MX), 2 drawn, first view "see" (code DRW234), 3 drawn past its deadline with one
 // overdue Santa (code LATE23), 4 closed (code CLS234), 5 drawn but the assignments were never written (code PEND23).
 
@@ -69,7 +70,7 @@ const PEOPLE = [
 
 /** @type {Record<number, { name: string, code: string, status: 'open' | 'drawn' | 'closed', budget: Budget, deadline: string }>} */
 const EX = {
-  1: { name: 'Office Secret Santa', code: 'K7Q4MX', status: 'open', budget: { kind: 'range', min: 1000, max: 3000, currency: 'RUB' }, deadline: day(20) },
+  1: { name: 'Office Secret Santa', code: 'K7Q4MX', status: 'open', budget: { kind: 'range', min: 1000, max: 3000, currency: 'RUB' }, deadline: day(flags.has('today') ? 0 : 20) },
   2: { name: 'Family Christmas', code: 'DRW234', status: 'drawn', budget: { kind: 'max', min: null, max: 50, currency: 'EUR' }, deadline: day(12) },
   3: { name: 'Book Club Swap', code: 'LATE23', status: 'drawn', budget: { kind: 'min', min: 20, max: null, currency: 'EUR' }, deadline: day(-10) },
   5: { name: 'Neighbours Swap', code: 'PEND23', status: 'drawn', budget: { kind: 'max', min: null, max: 30, currency: 'EUR' }, deadline: day(15) },
@@ -90,6 +91,7 @@ let received2 = giftFlag === 'received';
 const appealedIds = new Set([8]);
 /** Santas the organiser blocked in this session. @type {Set<number>} */
 const blockedSantas = new Set();
+let chatFail = flags.has('chatfail');
 /** @type {{ fromSanta: boolean, text: string, at: number }[]} */
 const thread = flags.has('empty') ? [] : [
   { fromSanta: true, text: 'Hi! Any size preferences for the scarf?', at: Date.now() - 30 * 3600_000 },
@@ -111,7 +113,7 @@ function exchangeView(id) {
   const you = (id === 1 && !unjoined) || id === 5 || live; // closed exchanges keep no personal data
   /** @type {OverdueRow[]} */
   const overdue = id === 3 && isOrganiser
-    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: flags.get('santa') === 'nouser' ? null : 'chloe_k', blocked: blockedSantas.has(103) }]
+    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: flags.get('santa') === 'nouser' ? null : 'chloe_k', blocked: blockedSantas.has(103), blockable: !blockedSantas.has(103) && !flags.has('lifted') }]
     : [];
   const myGift = live
     ? /** @type {NonNullable<ExchangeView['myGift']>} */ ({ status: id === 2 ? (received2 ? 'received' : giftFlag === 'notsent' ? 'not_sent' : 'on_way') : 'not_sent', tracking: id === 2 && giftFlag !== 'notsent' ? 'RB987654321CN' : null, sentAt: id === 2 && giftFlag !== 'notsent' ? Date.now() - 2 * DAY : null })
@@ -174,6 +176,10 @@ const handlers = {
     return exchangeView(id);
   },
   getThread: ({ id, side }) => {
+    if (chatFail) {
+      chatFail = false;
+      throw { code: 'INTERNAL' };
+    }
     const ex = exchangeView(id);
     return {
       exchangeName: ex.name,

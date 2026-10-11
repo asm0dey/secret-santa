@@ -3,7 +3,7 @@ import { eq, and } from 'sdk/db';
 import { members, users } from '../schema.js';
 import { enter } from '../lib/session.js';
 import { ERR, fail } from '../lib/errors.js';
-import { loadExchange, requireOrganiser, requireStatus } from '../lib/access.js';
+import { loadExchange, requireOrganiser, requireStatus, requireId } from '../lib/access.js';
 import { removeMemberRow } from '../lib/membership.js';
 import { send, esc } from '../lib/notify.js';
 import { t } from '../lib/i18n.js';
@@ -15,6 +15,7 @@ import { t } from '../lib/i18n.js';
  */
 export default async function ({ id, userId }, ctx) {
   const me = await enter(ctx);
+  requireId(userId);
   const ex = await loadExchange(id);
   requireOrganiser(ex, me.id);
   requireStatus(ex, 'open');

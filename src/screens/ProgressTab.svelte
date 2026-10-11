@@ -153,7 +153,9 @@
             {#if o.santaUsername}
               <button class="btn btn-outline" onclick={() => openLink(`https://t.me/${o.santaUsername}`)}>{t('common.openProfile')}</button>
             {/if}
-            <button class="btn btn-outline btn-error" disabled={busy} onclick={(e) => askBlock(o, e)}>{t('progress.block', { santa: o.santaName })}</button>
+            {#if o.blockable}
+              <button class="btn btn-outline btn-error" disabled={busy} onclick={(e) => askBlock(o, e)}>{t('progress.block', { santa: o.santaName })}</button>
+            {/if}
           </div>
         {/if}
         {#if outcome[o.santaUserId] === 'sent'}

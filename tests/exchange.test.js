@@ -151,8 +151,8 @@ test('home: lists my exchanges newest first with views, counts and active blocks
   await db.update(exchanges).set({ status: 'closed' }).where(eq(exchanges.id, b)).run();
   await db.insert(blocks).values([
     { userId: 1, organiserId: 5, exchangeId: 1, exchangeName: 'Old', createdAt: 5, decision: 'unblocked' },
-    { userId: 1, organiserId: 6, exchangeId: 1, exchangeName: 'Bad', createdAt: 7, appealAt: 8 },
-    { userId: 1, organiserId: 6, exchangeId: 1, exchangeName: 'Kept', createdAt: 9, appealAt: 10, decision: 'kept' },
+    { userId: 1, organiserId: 6, exchangeId: 2, exchangeName: 'Bad', createdAt: 7, appealAt: 8 },
+    { userId: 1, organiserId: 6, exchangeId: 3, exchangeName: 'Kept', createdAt: 9, appealAt: 10, decision: 'kept' },
     { userId: 2, organiserId: 6, exchangeId: 1, exchangeName: 'Other', createdAt: 9 },
   ]).run();
 
@@ -169,4 +169,19 @@ test('home: lists my exchanges newest first with views, counts and active blocks
   await db.update(assignments).set({ seenAt: 5 }).run();
   h = await home({}, ann);
   expect(h.exchanges[2].view).toBe('drawn');
+});
+
+test('create racing a block: a block landing after enter() leaves no exchange behind', async () => {
+  const orig = db.insert.bind(db);
+  /** @type {any} */ (db).insert = (/** @type {any} */ t) => {
+    if (t === exchanges) {
+      /** @type {any} */ (db).insert = orig;
+      sqlite.run('insert into blocks (user_id, organiser_id, exchange_id, created_at) values (1, 9, 99, 1)');
+    }
+    return orig(t);
+  };
+  try {
+    expect(await code(() => createExchange(input, ann))).toBe('BLOCKED');
+  } finally { /** @type {any} */ (db).insert = orig; }
+  expect(await db.select().from(exchanges).all()).toEqual([]);
 });

@@ -1,6 +1,6 @@
 import { db } from 'sdk';
 import { eq, and, sql } from 'sdk/db';
-import { exchanges, members } from '../schema.js';
+import { exchanges, members, blocks } from '../schema.js';
 import { ERR, fail } from './errors.js';
 
 export const MAX_MEMBERS = 100;
@@ -9,6 +9,13 @@ export const MAX_MEMBERS = 100;
 // land after the draw's open -> drawn flip (the read of ex.status before it may be stale).
 /** @param {number} id */
 const stillOpen = (id) => sql`exists (select 1 from exchanges where id = ${id} and status = 'open')`;
+
+// An active block (not lifted on appeal) on this user. In the write itself, so a block landing after enter() still counts.
+/** @param {number} userId */
+export const notBlocked = (userId) => sql`not exists (select 1 from blocks where user_id = ${userId} and (decision is null or decision = 'kept'))`;
+/** @param {number} userId */
+export const isBlocked = async (userId) =>
+  !!(await db.select({ id: blocks.id }).from(blocks).where(and(eq(blocks.userId, userId), sql`(${blocks.decision} is null or ${blocks.decision} = 'kept')`)).get());
 
 // After a refused write: say why, from a fresh read.
 /** @param {number} exchangeId */
@@ -22,14 +29,14 @@ async function refuse(exchangeId) {
 const find = (exchangeId, userId) =>
   db.select().from(members).where(and(eq(members.exchangeId, exchangeId), eq(members.userId, userId))).get();
 
-// cols: validated detailsColumns(). Fails ALREADY_DRAWN / CLOSED / FULL / ALREADY_MEMBER.
+// cols: validated detailsColumns(). Fails ALREADY_DRAWN / CLOSED / FULL / ALREADY_MEMBER / BLOCKED.
 /** @param {number} exchangeId @param {number} userId @param {import('./details.js').DetailsColumns} cols @param {number} joinedAt */
 export async function addMember(exchangeId, userId, cols, joinedAt) {
   const c = cols;
   try {
     await db.run(sql`insert into members (exchange_id, user_id, nickname, address, wish_mode, wishlist_url, wishes, joined_at)
       select ${exchangeId}, ${userId}, ${c.nickname}, ${c.address}, ${c.wishMode}, ${c.wishlistUrl}, ${c.wishes}, ${joinedAt}
-      where ${stillOpen(exchangeId)}
+      where ${stillOpen(exchangeId)} and ${notBlocked(userId)}
         and (select count(*) from members where exchange_id = ${exchangeId}) < ${MAX_MEMBERS}`);
   } catch (e) {
     if (await find(exchangeId, userId)) fail(ERR.ALREADY_MEMBER); // members_ex_user unique index
@@ -37,6 +44,7 @@ export async function addMember(exchangeId, userId, cols, joinedAt) {
   }
   if (await find(exchangeId, userId)) return;
   await refuse(exchangeId);
+  if (await isBlocked(userId)) fail(ERR.BLOCKED);
   fail(ERR.FULL);
 }
 

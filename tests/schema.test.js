@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test';
-import { db } from 'sdk';
+import { db, sqlite } from 'sdk';
 import { resetDb } from '../test/helpers.js';
-import { assignments, members, exchanges } from '../tgcloud/schema.js';
+import { assignments, members, exchanges, blocks } from '../tgcloud/schema.js';
 
 test('tables exist and pairing uniqueness is enforced', async () => {
   resetDb();
@@ -23,4 +23,13 @@ test('exchange code is unique', async () => {
   const row = { code: 'ABC234', name: 'x', organiserId: 1 };
   await db.insert(exchanges).values(row).run();
   await expect(async () => { await db.insert(exchanges).values(row).run(); }).toThrow();
+});
+
+test('one block row per user per exchange; sweep index on exchanges(status, closed_at)', async () => {
+  resetDb();
+  await db.insert(blocks).values({ userId: 1, organiserId: 2, exchangeId: 3 }).run();
+  await expect(async () => { await db.insert(blocks).values({ userId: 1, organiserId: 2, exchangeId: 3 }).run(); }).toThrow();
+  await db.insert(blocks).values({ userId: 1, organiserId: 2, exchangeId: 4 }).run();
+  const idx = /** @type {{ name: string }[]} */ (sqlite.query("select name from pragma_index_info('exchanges_status_closed_at')").all()).map((r) => r.name);
+  expect(idx).toEqual(['status', 'closed_at']);
 });

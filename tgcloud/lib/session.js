@@ -11,8 +11,10 @@ export async function enter(ctx) {
   const prev = await db.select().from(users).where(eq(users.id, u.id)).get();
   const canMessage = u.allows_write_to_pm == null ? (prev?.canMessage ?? null) : u.allows_write_to_pm ? 1 : 0;
   const row = { firstName: u.first_name, username: u.username ?? null, lang: langOf(u.language_code), canMessage };
-  if (prev) await db.update(users).set(row).where(eq(users.id, u.id)).run();
-  else await db.insert(users).values({ id: u.id, ...row, createdAt: clock.now() }).run();
+  if (prev) {
+    const same = prev.firstName === row.firstName && prev.username === row.username && prev.lang === row.lang && prev.canMessage === row.canMessage;
+    if (!same) await db.update(users).set(row).where(eq(users.id, u.id)).run(); // chat polls every 10 s: skip no-op writes
+  } else await db.insert(users).values({ id: u.id, ...row, createdAt: clock.now() }).run();
 
   await sweep(clock.now());
 

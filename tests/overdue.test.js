@@ -180,3 +180,38 @@ test('a blocked Santa stays in overdue with blocked:true and is no longer nudged
   api.calls.length = 0;
   expect((await nudge({ id }, ann)).sent).toBe(4);
 });
+
+test('blockable: false once any block exists for the Santa in this exchange, also after it is lifted', async () => {
+  const id = await mk();
+  setNow(LATE);
+  expect((await getExchange({ id }, ann)).overdue.every((o) => o.blockable && !o.blocked)).toBe(true);
+  await block({ id, santaUserId: 1004 }, ann);
+  expect((await getExchange({ id }, ann)).overdue.find((o) => o.santaUserId === 1004)).toMatchObject({ blocked: true, blockable: false });
+  const blockId = /** @type {{ id: number }} */ (await db.select().from(blocks).get()).id;
+  await submitAppeal({ blockId, text: 'sorry' }, user(1004));
+  await decideAppeal({ blockId, decision: 'unblock' }, ann);
+  const ov = await getExchange({ id }, ann);
+  expect(ov.overdue.find((o) => o.santaUserId === 1004)).toMatchObject({ blocked: false, blockable: false });
+  expect(ov.overdue.filter((o) => o.blockable).length).toBe(3);
+});
+
+test('an organiser who joined and has not sent is not in their own overdue box, nor nudged', async () => {
+  const { id, code: c } = await createExchange({ name: 'Self', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
+  for (const s of [1001, 1002, 1003]) await join({ code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
+  await draw({ id }, ann);
+  api.calls.length = 0;
+  setNow(LATE);
+  expect((await getExchange({ id }, ann)).overdue.map((o) => o.santaUserId).sort()).toEqual([1002, 1003]);
+  expect(await nudge({ id }, ann)).toEqual({ sent: 2 });
+  expect(sent().some((c) => c.params.chat_id === 1001)).toBe(false);
+});
+
+test('before the deadline messageSanta is FORBIDDEN alike for a Santa who sent and one who did not', async () => {
+  const id = await mk();
+  await markSent({ id }, user(1003));
+  api.calls.length = 0;
+  expect(await code(() => messageSanta({ id, santaUserId: 1003, text: 'hi' }, ann))).toBe('FORBIDDEN');
+  expect(await code(() => messageSanta({ id, santaUserId: 1004, text: 'hi' }, ann))).toBe('FORBIDDEN');
+  expect(await code(() => nudge({ id }, ann))).toBe('NOT_YET');
+  expect(sent().length).toBe(0);
+});

@@ -8,7 +8,7 @@ const ERROR_TEXT = /** @type {Record<string, string>} */ ({ FORBIDDEN: 'errForbi
 
 // Ids are plain decimal integers, nothing else.
 /** @param {string} s */
-const int = (s) => (/^\d{1,15}$/.test(s) ? Number(s) : NaN);
+const int = (s) => (/^\d{1,16}$/.test(s) && Number.isSafeInteger(Number(s)) ? Number(s) : NaN);
 
 // block:<exId>:<santaId> | letgo:<exId>:<santaId> | appeal:<blockId>:unblock|keep. Acts as query.from.id.
 /** @param {string | undefined} data @param {number} userId */
@@ -26,7 +26,10 @@ async function run(data, userId) {
  * @param {unknown} _ctx
  */
 export default async function (query, _ctx) {
-  const lang = (await db.select().from(users).where(eq(users.id, query.from.id)).get())?.lang ?? langOf(query.from.language_code);
+  // The stored language if we can read it; the query is answered either way.
+  /** @type {string} */
+  let lang = langOf(query.from.language_code);
+  try { lang = (await db.select().from(users).where(eq(users.id, query.from.id)).get())?.lang ?? lang; } catch (e) { console.error('callback_query: user lookup failed', e); }
   let ok = false;
   let text = t(lang, 'done');
   try {

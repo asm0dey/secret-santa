@@ -36,7 +36,7 @@ test('enter computes blocked from active blocks only', async () => {
   expect((await enter(u)).blocked).toBe(false);
   await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1, decision: 'unblocked' }).run();
   expect((await enter(u)).blocked).toBe(false);
-  await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1, decision: 'kept' }).run();
+  await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 2, decision: 'kept' }).run();
   expect((await enter(u)).blocked).toBe(true);
   await db.delete(blocks).run();
   await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1 }).run();
@@ -113,4 +113,20 @@ test('send retries once after 429, waiting retry_after', async () => {
     expect(await send(5, 'x')).toBe(false); // second 429 gives up
     expect(waits).toEqual([3, 1]);
   } finally { hooks.sleep = orig; }
+});
+
+test('enter skips the users write when nothing changed', async () => {
+  const ctx = ctxFor({ id: 7, first_name: 'Ann', username: 'ann', language_code: 'en', allows_write_to_pm: true });
+  await enter(ctx);
+  const orig = db.update.bind(db);
+  let writes = 0;
+  /** @type {any} */ (db).update = (/** @type {any} */ t) => { if (t === users) writes++; return orig(t); };
+  try {
+    await enter(ctx);
+    await enter(ctxFor({ id: 7, first_name: 'Ann', username: 'ann', language_code: 'en' })); // allows_write_to_pm absent: keeps the stored value
+    expect(writes).toBe(0);
+    await enter(ctxFor({ id: 7, first_name: 'Anna', username: 'ann', language_code: 'en' }));
+    expect(writes).toBe(1);
+  } finally { /** @type {any} */ (db).update = orig; }
+  expect((await db.select().from(users).get())?.firstName).toBe('Anna');
 });

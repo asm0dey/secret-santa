@@ -171,3 +171,29 @@ test('getExchange: non-member FORBIDDEN; organiser who has not joined gets me: n
   await leave({ id }, bob);
   expect(await code(() => getExchange({ id }, bob))).toBe('FORBIDDEN');
 });
+
+test('ids from input must be numbers: a string user id cannot remove the organiser; a string exchange id is BAD_INPUT', async () => {
+  const { id, c } = await mk();
+  await join({ code: c, details: ideas }, ann);
+  await join({ code: c, details: ideas }, bob);
+  api.calls.length = 0;
+  expect(await code(() => removeMember({ id, userId: /** @type {any} */ ('1') }, ann))).toBe('BAD_INPUT');
+  expect(await code(() => removeMember({ id, userId: /** @type {any} */ (1.5) }, ann))).toBe('BAD_INPUT');
+  expect((await db.select().from(members).all()).map((m) => m.userId)).toEqual([1, 2]);
+  expect(api.calls.length).toBe(0);
+  expect(await code(() => getExchange({ id: /** @type {any} */ (String(id)) }, ann))).toBe('BAD_INPUT');
+  expect(await code(() => getExchange({ id: /** @type {any} */ (undefined) }, ann))).toBe('BAD_INPUT');
+});
+
+test('join racing a block: a block landing after enter() refuses the insert', async () => {
+  const { c } = await mk();
+  const orig = db.run.bind(db);
+  /** @type {any} */ (db).run = async (/** @type {any} */ q) => {
+    /** @type {any} */ (db).run = orig;
+    await db.insert(blocks).values({ userId: 2, organiserId: 9, exchangeId: 99, createdAt: 1 }).run();
+    return orig(q);
+  };
+  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('BLOCKED');
+  expect(/** @type {any} */ (db).run).toBe(orig);
+  expect(await db.select().from(members).all()).toEqual([]);
+});

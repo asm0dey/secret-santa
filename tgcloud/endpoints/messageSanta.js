@@ -18,7 +18,7 @@ export default async function ({ id, santaUserId, text }, ctx) {
   const me = await enter(ctx);
   const ex = await loadExchange(id);
   requireOrganiser(ex, me.id);
-  if (!Number.isInteger(santaUserId) || typeof text !== 'string') fail(ERR.BAD_INPUT);
+  if (!Number.isSafeInteger(santaUserId) || typeof text !== 'string') fail(ERR.BAD_INPUT);
   const body = text.trim();
   if (body.length < 1 || body.length > 1000) fail(ERR.BAD_INPUT);
   if (!(await overdueOf(ex)).some((o) => o.santaUserId === santaUserId)) fail(ERR.FORBIDDEN);

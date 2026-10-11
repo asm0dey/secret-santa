@@ -185,9 +185,45 @@ test('a recently closed exchange that still holds personal data is wiped again, 
   expect(api.calls.length).toBe(0);
 });
 
-test('a closed exchange older than a day is not re-wiped', async () => {
-  await leftovers(T0 - 2 * 86_400_000);
+test('a closed exchange older than a week is not re-wiped', async () => {
+  await leftovers(T0 - 8 * 86_400_000);
   await poke();
   expect((await db.select().from(members).get())?.address).toBe('late write');
   expect((await db.select().from(messages).all()).length).toBe(1);
+});
+
+test('a closed exchange a few days old (crash, then an idle bot) is still re-wiped', async () => {
+  await leftovers(T0 - 3 * 86_400_000);
+  await poke();
+  expect((await db.select().from(members).get())?.address).toBeNull();
+  expect((await db.select().from(messages).all()).length).toBe(0);
+});
+
+test('the sweep removes member rows whose exchange is gone (a crash inside cancel), and nothing else', async () => {
+  const { id, code } = await createExchange({ name: 'Live', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
+  await join({ code, details: det('Keep') }, user(1002));
+  await db.insert(members).values([{ exchangeId: 777, userId: 1003 }, { exchangeId: 777, userId: 1004 }]).run();
+  await poke();
+  expect((await db.select().from(members).all()).map((m) => [m.exchangeId, m.userId])).toEqual([[id, 1002]]);
+});
+
+test('draw and close work where crypto.randomUUID does not exist', async () => {
+  const orig = crypto.randomUUID;
+  /** @type {any} */ (crypto).randomUUID = undefined;
+  try {
+    const id = await mk();
+    expect((await asgs(id)).length).toBe(4);
+    expect(await closeExchange(await loadExchange(id), 'complete')).toBe(true);
+    expect((await loadExchange(id)).status).toBe('closed');
+  } finally { crypto.randomUUID = orig; }
+});
+
+test('an organiser who joined and never sent gets no Block prompt about themself', async () => {
+  const id = await mk(true);
+  setNow(AFTER);
+  await poke();
+  const prompts = sent().filter((c) => c.params.chat_id === 1001 && c.params.reply_markup);
+  expect(prompts.length).toBe(4);
+  expect(prompts.some((c) => JSON.stringify(c.params.reply_markup).includes(`block:${id}:1001`))).toBe(false);
+  expect(photos().length).toBe(5); // the organiser's giftee still gets the sorry
 });
