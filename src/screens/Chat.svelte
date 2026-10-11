@@ -1,7 +1,7 @@
 <script>
   // Anonymous chat (mockup 6). side 'giftee' = I am the Santa writing to my giftee; 'santa' = I am the giftee writing to my Santa.
   // The API gives the giftee side nothing about the Santa, and this screen adds nothing.
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { call } from '../lib/api.js';
   import { t, errorText } from '../lib/i18n.js';
   import { stamp } from '../lib/format.js';
@@ -60,8 +60,9 @@
   // Poll only while the app is visible: stop when hidden, load at once and resume when shown again.
   $effect(() => {
     if (!visible || loadCode) return; // an error like NOT_FOUND/CLOSED will not fix itself: stop asking
-    load();
-    const timer = setInterval(() => inflight || load(), POLL_MS);
+    // untracked: load() reads `thread`, and this effect must depend only on visibility and the error state (id and side never change: the screen is keyed on them)
+    untrack(() => load());
+    const timer = setInterval(() => inflight || load(), POLL_MS); // runs outside the effect's tracking
     return () => clearInterval(timer);
   });
 

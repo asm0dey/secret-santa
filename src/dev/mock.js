@@ -237,6 +237,8 @@ const handlers = {
  * @returns {Promise<any>}
  */
 export async function mockCall(name, input) {
+  const counts = ((/** @type {any} */ (globalThis)).__mockCalls ??= {}); // lets browser checks count requests
+  counts[name] = (counts[name] ?? 0) + 1;
   await new Promise((r) => setTimeout(r, 120));
   const h = /** @type {Record<string, (i: any) => any>} */ (/** @type {unknown} */ (handlers))[name];
   if (!h) throw { code: 'INTERNAL' };
