@@ -22,6 +22,9 @@ export const BOT = {
     giftSentTracking: '\nTracking: <code>{tracking}</code>',
     giftReceived: '<b>{exchange}</b>\nYour giftee received your gift. Nice work, Santa!',
     btnMyGift: 'My gift',
+    newFromSanta: '<b>{exchange}</b>\nYour Secret Santa sent you a message.',
+    newFromGiftee: '<b>{exchange}</b>\nYour giftee replied to you.',
+    btnOpenChat: 'Open chat',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
@@ -33,6 +36,9 @@ export const BOT = {
     giftSentTracking: '\nТрек-номер: <code>{tracking}</code>',
     giftReceived: '<b>{exchange}</b>\nВаш получатель получил подарок. Отличная работа, Санта!',
     btnMyGift: 'Мой подарок',
+    newFromSanta: '<b>{exchange}</b>\nТайный Санта прислал вам сообщение.',
+    newFromGiftee: '<b>{exchange}</b>\nВаш получатель ответил вам.',
+    btnOpenChat: 'Открыть чат',
   },
 };
 
