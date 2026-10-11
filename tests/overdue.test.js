@@ -36,6 +36,16 @@ test('before the deadline: overdue empty, nudge NOT_YET', async () => {
   expect(await code(() => messageSanta({ id, santaUserId: 1003, text: 'hi' }, ann))).toBe('FORBIDDEN');
 });
 
+test('deadline boundary: still on time at 23:59:59 UTC of the deadline day, overdue from 00:00:00 next day', async () => {
+  const id = await mk();
+  setNow(Date.parse('2026-12-20T23:59:59Z'));
+  expect((await getExchange({ id }, ann)).overdue).toEqual([]);
+  expect(await code(() => nudge({ id }, ann))).toBe('NOT_YET');
+  setNow(Date.parse('2026-12-21T00:00:00Z'));
+  expect((await getExchange({ id }, ann)).overdue.length).toBe(4);
+  expect((await nudge({ id }, ann)).sent).toBe(4);
+});
+
 test('after the deadline the organiser sees only Santas who have not sent', async () => {
   const id = await mk();
   await markSent({ id }, user(1003));
@@ -77,6 +87,8 @@ test('nudge messages each overdue Santa once, in their language, with the giftee
   const en = out.find((c) => c.params.chat_id === 1004);
   expect(en?.params.text).toBe("<b>Office &lt;Santa&gt;</b>\nReminder: gifts were due by 2026-12-20, and your giftee hasn't received theirs yet. If it's on the way, mark it as sent or tell them in the anonymous chat.");
   expect(en?.params.reply_markup.inline_keyboard[0][0].web_app.url).toEndWith(`#/x/${id}/giftee`);
+  expect(en?.params.reply_markup.inline_keyboard[0][0].text).toBe('Open my giftee');
+  expect(out.find((c) => c.params.chat_id === 1002)?.params.reply_markup.inline_keyboard[0][0].text).toBe('Кому я дарю');
   expect(out.find((c) => c.params.chat_id === 1002)?.params.text).toContain('Напоминание');
   expect(out.some((c) => /Nick|First/.test(c.params.text))).toBe(false); // no names in the nudge
 });

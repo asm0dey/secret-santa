@@ -28,6 +28,7 @@ export const BOT = {
     nudge: '<b>{exchange}</b>\nReminder: gifts were due by {deadline}, and your giftee hasn\'t received theirs yet. If it\'s on the way, mark it as sent or tell them in the anonymous chat.',
     fromOrganiser: '<b>Message from {organiser}, organiser of "{exchange}"</b>\n{text}',
     btnReplyOrganiser: 'Reply to {organiser}',
+    btnOpenGiftee: 'Open my giftee',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
@@ -45,6 +46,7 @@ export const BOT = {
     nudge: '<b>{exchange}</b>\nНапоминание: подарки нужно было отправить до {deadline}, а ваш получатель ещё ничего не получил. Если подарок в пути, отметьте его как отправленный или напишите получателю в анонимном чате.',
     fromOrganiser: '<b>Сообщение от {organiser}, организатора обмена «{exchange}»</b>\n{text}',
     btnReplyOrganiser: 'Ответить {organiser}',
+    btnOpenGiftee: 'Кому я дарю',
   },
 };
 

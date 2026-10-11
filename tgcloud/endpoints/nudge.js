@@ -26,7 +26,7 @@ export default async function ({ id }, ctx) {
   for (const o of await overdueOf(ex)) {
     const lang = (await db.select().from(users).where(eq(users.id, o.santaUserId)).get())?.lang ?? 'en';
     if (await send(o.santaUserId, t(lang, 'nudge', { exchange: esc(ex.name), deadline: ex.deadline }),
-      [[{ text: t(lang, 'btnMyGift'), app: `#/x/${ex.id}/giftee` }]])) sent++;
+      [[{ text: t(lang, 'btnOpenGiftee'), app: `#/x/${ex.id}/giftee` }]])) sent++;
   }
   return { sent };
 }
