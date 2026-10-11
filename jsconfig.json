@@ -1,0 +1,5 @@
+{
+  "compilerOptions": {
+    "paths": { "sdk": ["./test/sdk/index.js"], "sdk/db": ["./test/sdk/db.js"] }
+  }
+}

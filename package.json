@@ -6,7 +6,6 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "drizzle-orm": "^0.45.4",
-    "sdk": "file:./test/sdk"
+    "drizzle-orm": "^0.45.4"
   }
 }
