@@ -9,6 +9,11 @@ import { BOT_USERNAME } from '../lib/config.js';
 import { budgetOf } from '../lib/exchangeFields.js';
 import { detailsOf, wishTag } from '../lib/details.js';
 
+/**
+ * @param {{ id: number }} input
+ * @param {import('../lib/types.js').EndpointCtx} ctx
+ * @returns {Promise<Record<string, any>>}
+ */
 export default async function ({ id }, ctx) {
   const user = await enter(ctx);
   const ex = await loadExchange(id);

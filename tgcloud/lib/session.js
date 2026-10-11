@@ -5,6 +5,7 @@ import { clock } from './clock.js';
 import { langOf } from './i18n.js';
 import { sweep } from './sweep.js';
 
+/** @param {import('./types.js').EndpointCtx} ctx @returns {Promise<import('./types.js').Me>} */
 export async function enter(ctx) {
   const u = ctx.initData.user;
   const prev = await db.select().from(users).where(eq(users.id, u.id)).get();

@@ -10,13 +10,14 @@ import { APP_URL } from '../tgcloud/lib/config.js';
 
 beforeEach(resetDb);
 
-const code = async (fn) => { try { await fn(); } catch (e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {() => unknown} fn */
+const code = async (fn) => { try { await fn(); } catch (/** @type {any} */ e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
 
 test('enter creates then updates a user', async () => {
   setNow(1000);
   let me = await enter(ctxFor({ id: 7, first_name: 'Ann', username: 'ann', language_code: 'en', allows_write_to_pm: true }));
   expect(me).toEqual({ id: 7, firstName: 'Ann', username: 'ann', lang: 'en', canMessage: true, blocked: false });
-  expect((await db.select().from(users).get()).createdAt).toBe(1000);
+  expect((await db.select().from(users).get())?.createdAt).toBe(1000);
   setNow(2000);
   me = await enter(ctxFor({ id: 7, first_name: 'Anna', language_code: 'ru' }));
   expect(me).toMatchObject({ firstName: 'Anna', username: null, lang: 'ru', canMessage: true });
@@ -58,7 +59,7 @@ test('access: loadExchange / requireMember / requireOrganiser', async () => {
 });
 
 test('access: requireStatus', async () => {
-  const ex = (status) => ({ status });
+  const ex = (/** @type {string} */ status) => /** @type {any} */ ({ status });
   requireStatus(ex('open'), 'open');
   requireStatus(ex('drawn'), 'open', 'drawn');
   expect(await code(() => requireStatus(ex('drawn'), 'open'))).toBe('ALREADY_DRAWN');
@@ -98,6 +99,7 @@ test('send returns false on 403 without throwing', async () => {
 });
 
 test('send retries once after 429, waiting retry_after', async () => {
+  /** @type {number[]} */
   const waits = [];
   const orig = hooks.sleep;
   hooks.sleep = async (s) => { waits.push(s); };

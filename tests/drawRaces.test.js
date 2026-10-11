@@ -12,12 +12,16 @@ import draw from '../tgcloud/endpoints/draw.js';
 
 beforeEach(() => { resetDb(); setNow(Date.parse('2026-10-11T12:00:00Z')); });
 
+/** @param {number} id @param {string} name */
 const user = (id, name) => ctxFor({ id, first_name: name, language_code: 'en' });
 const ann = user(1, 'Ann');
+/** @param {string} nickname @returns {import("../tgcloud/lib/types.js").Details} */
 const det = (nickname) => ({ nickname, address: '1 Street', wishMode: 'surprise' });
-const code = async (fn) => { try { await fn(); } catch (e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {() => unknown} fn */
+const code = async (fn) => { try { await fn(); } catch (/** @type {any} */ e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
 const sent = () => api.calls.filter((c) => c.method === 'sendMessage');
 
+/** @param {number} n */
 async function mk(n) {
   const { id, code: c } = await createExchange({ name: 'Gifts', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
   await join({ code: c, details: det('Annie') }, ann);
@@ -28,18 +32,21 @@ async function mk(n) {
 // Runs `act` synchronously right before the next db[method] call: a rival draw lands exactly between an
 // endpoint's read and its write (flip to drawn + a full cyclic pairing of the current members).
 // `table` narrows it to the first call on that table (enter() also updates users, etc.).
+/** @param {string} method @param {number} id @param {any} [table] */
 function rivalDrawBefore(method, id, table) {
-  const orig = db[method];
-  db[method] = (...a) => {
+  const d = /** @type {any} */ (db); // monkeypatching the fake db
+  const orig = d[method];
+  d[method] = (/** @type {any[]} */ ...a) => {
     if (table && a[0] !== table) return orig.apply(db, a);
-    db[method] = orig;
-    const us = sqlite.query('select user_id u from members where exchange_id = ?').all(id).map((r) => r.u);
+    d[method] = orig;
+    const us = /** @type {{ u: number }[]} */ (sqlite.query('select user_id u from members where exchange_id = ?').all(id)).map((r) => r.u);
     sqlite.run("update exchanges set status = 'drawn', draw_token = 'rival' where id = ?", [id]);
     us.forEach((s, i) => sqlite.run('insert into assignments (exchange_id, santa_id, giftee_id) values (?, ?, ?)', [id, s, us[(i + 1) % us.length]]));
     return orig.apply(db, a);
   };
 }
 
+/** @param {number} id */
 async function expectConsistent(id) {
   const ms = (await db.select().from(members).where(eq(members.exchangeId, id)).all()).map((m) => m.userId).sort();
   const as = await db.select().from(assignments).where(eq(assignments.exchangeId, id)).all();
@@ -81,10 +88,11 @@ test('deleteExchange in that window is refused: nothing deleted, nobody told it 
 
 test('the flip is conditional: a rival that already flipped wins, we write and send nothing', async () => {
   const { id } = await mk(4);
-  const orig = db.update;
-  db.update = (...a) => { // rival flips between our read and our flip (no assignments yet)
+  const d = /** @type {any} */ (db); // monkeypatching the fake db
+  const orig = d.update;
+  d.update = (/** @type {any[]} */ ...a) => { // rival flips between our read and our flip (no assignments yet)
     if (a[0] !== exchanges) return orig.apply(db, a);
-    db.update = orig;
+    d.update = orig;
     sqlite.run("update exchanges set status = 'drawn', draw_token = 'rival' where id = ?", [id]);
     return orig.apply(db, a);
   };
@@ -95,10 +103,11 @@ test('the flip is conditional: a rival that already flipped wins, we write and s
 
 test('crash after the flip, before the batch insert: the next draw completes and notifies exactly once', async () => {
   const { id } = await mk(5);
-  const orig = db.insert;
-  db.insert = (...a) => { if (a[0] !== assignments) return orig.apply(db, a); db.insert = orig; throw new Error('boom'); };
+  const d = /** @type {any} */ (db); // monkeypatching the fake db
+  const orig = d.insert;
+  d.insert = (/** @type {any[]} */ ...a) => { if (a[0] !== assignments) return orig.apply(db, a); d.insert = orig; throw new Error('boom'); };
   await expect(draw({ id }, ann)).rejects.toThrow('boom');
-  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get()).status).toBe('drawn');
+  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get())?.status).toBe('drawn');
   expect(await db.select().from(assignments).all()).toEqual([]);
   expect(sent().length).toBe(0);
   expect(await code(() => draw({ id }, user(2, 'Name2')))).toBe('FORBIDDEN');
@@ -112,10 +121,11 @@ test('crash after the flip, before the batch insert: the next draw completes and
 
 test('members dropping below 3 between count and flip leaves the exchange open (TOO_FEW)', async () => {
   const { id } = await mk(3);
-  const orig = db.update;
-  db.update = (...a) => { if (a[0] !== exchanges) return orig.apply(db, a); db.update = orig; sqlite.run('delete from members where exchange_id = ? and user_id = 3', [id]); return orig.apply(db, a); };
+  const d = /** @type {any} */ (db); // monkeypatching the fake db
+  const orig = d.update;
+  d.update = (/** @type {any[]} */ ...a) => { if (a[0] !== exchanges) return orig.apply(db, a); d.update = orig; sqlite.run('delete from members where exchange_id = ? and user_id = 3', [id]); return orig.apply(db, a); };
   expect(await code(() => draw({ id }, ann))).toBe('TOO_FEW');
-  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get()).status).toBe('open');
+  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get())?.status).toBe('open');
   expect(sent().length).toBe(0);
 });
 

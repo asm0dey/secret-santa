@@ -3,6 +3,10 @@ import { eq, and, desc, count, sql } from 'sdk/db';
 import { exchanges, members, assignments, blocks } from '../schema.js';
 import { enter } from '../lib/session.js';
 
+/**
+ * @param {{}} input
+ * @param {import('../lib/types.js').EndpointCtx} ctx
+ */
 export default async function ({}, ctx) {
   const me = await enter(ctx);
   const mine = await db.select().from(exchanges)
@@ -11,7 +15,7 @@ export default async function ({}, ctx) {
 
   const list = [];
   for (const ex of mine) {
-    const { n } = await db.select({ n: count() }).from(members).where(eq(members.exchangeId, ex.id)).get();
+    const { n } = /** @type {{ n: number }} */ (await db.select({ n: count() }).from(members).where(eq(members.exchangeId, ex.id)).get());
     let view = ex.status === 'open' ? 'waiting' : ex.status === 'closed' ? 'closed' : 'drawn';
     if (view === 'drawn') {
       const a = await db.select().from(assignments)

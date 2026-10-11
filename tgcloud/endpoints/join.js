@@ -9,6 +9,11 @@ import { requireStatus } from '../lib/access.js';
 import { detailsColumns } from '../lib/details.js';
 import { addMember } from '../lib/membership.js';
 
+/**
+ * @param {{ code: unknown, details: import('../lib/types.js').Details }} input
+ * @param {import('../lib/types.js').EndpointCtx} ctx
+ * @returns {Promise<{ id: number }>}
+ */
 export default async function ({ code, details }, ctx) {
   const me = await enter(ctx);
   if (me.blocked) fail(ERR.BLOCKED);

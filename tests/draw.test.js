@@ -16,7 +16,7 @@ test('mutual pairs are possible (not always one cycle)', () => {
   let mutual = false;
   for (let i = 0; i < 2000 && !mutual; i++) {
     const g = new Map(derange([1, 2, 3, 4]).map(p => [p.santaId, p.gifteeId]));
-    mutual = [1, 2, 3, 4].some(a => g.get(g.get(a)) === a);
+    mutual = [1, 2, 3, 4].some(a => g.get(/** @type {number} */ (g.get(a))) === a);
   }
   expect(mutual).toBe(true);
 });

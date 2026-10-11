@@ -23,6 +23,6 @@ test('setNow overrides the clock until resetDb', () => {
 });
 
 test('ctxFor and fail', () => {
-  expect(ctxFor({ id: 1, start_param: 'ABC' })).toEqual({ initData: { user: { id: 1 }, start_param: 'ABC' } });
-  try { fail('FULL'); } catch (e) { expect(e.parameters).toEqual({ code: 'FULL' }); expect(e.message).toBe('FULL'); }
+  expect(ctxFor({ id: 1, start_param: 'ABC' })).toEqual(/** @type {any} */ ({ initData: { user: { id: 1 }, start_param: 'ABC' } }));
+  try { fail('FULL'); } catch (/** @type {any} */ e) { expect(e.parameters).toEqual({ code: 'FULL' }); expect(e.message).toBe('FULL'); }
 });

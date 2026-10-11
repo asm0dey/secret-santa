@@ -9,12 +9,16 @@ import draw from '../tgcloud/endpoints/draw.js';
 
 beforeEach(() => { resetDb(); setNow(Date.parse('2026-10-11T12:00:00Z')); });
 
+/** @param {number} id @param {string} name @param {string} [lang] */
 const user = (id, name, lang = 'en') => ctxFor({ id, first_name: name, language_code: lang });
 const ann = user(1, 'Ann');
-const code = async (fn) => { try { await fn(); } catch (e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {() => unknown} fn */
+const code = async (fn) => { try { await fn(); } catch (/** @type {any} */ e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {string} nickname @returns {import("../tgcloud/lib/types.js").Details} */
 const det = (nickname) => ({ nickname, address: '1 Street', wishMode: 'surprise' });
 
 // Organiser Ann (nickname Annie) joins as member 1 unless organiserJoins is false; users 2..n join too.
+/** @param {number} n @param {boolean} [organiserJoins] */
 async function mk(n, organiserJoins = true) {
   const { id, code: c } = await createExchange({ name: 'Office <Santa>', budget: { kind: 'max', max: 50, currency: 'EUR' }, deadline: '2026-12-20' }, ann);
   if (organiserJoins) await join({ code: c, details: det('Annie') }, ann);
@@ -22,7 +26,8 @@ async function mk(n, organiserJoins = true) {
   return id;
 }
 const rows = () => db.select().from(assignments).all();
-const status = async (id) => (await db.select().from(exchanges).where(eq(exchanges.id, id)).get()).status;
+/** @param {number} id */
+const status = async (id) => (await db.select().from(exchanges).where(eq(exchanges.id, id)).get())?.status;
 const sent = () => api.calls.filter((c) => c.method === 'sendMessage');
 
 test('draw: a valid pairing, status drawn, one private message per member', async () => {
@@ -34,7 +39,7 @@ test('draw: a valid pairing, status drawn, one private message per member', asyn
   expect(new Set(a.map((r) => r.santaId)).size).toBe(5);
   expect(new Set(a.map((r) => r.gifteeId)).size).toBe(5);
   expect(await status(id)).toBe('drawn');
-  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get()).drawnAt).toBe(Date.parse('2026-10-11T12:00:00Z'));
+  expect((await db.select().from(exchanges).where(eq(exchanges.id, id)).get())?.drawnAt).toBe(Date.parse('2026-10-11T12:00:00Z'));
 
   const msgs = sent();
   expect(msgs.map((m) => m.params.chat_id).sort()).toEqual([1, 2, 3, 4, 5]);
@@ -43,10 +48,10 @@ test('draw: a valid pairing, status drawn, one private message per member', asyn
     for (const other of ['Nick2', 'Nick3', 'Nick4', 'Nick5', 'Name2', 'Name3', 'Name4', 'Name5']) expect(p.text).not.toContain(other);
     expect(p.reply_markup.inline_keyboard[0][0].web_app.url).toEndWith(`#/x/${id}/giftee`);
   }
-  const en = msgs.find((m) => m.params.chat_id === 3).params;
+  const en = msgs.find((m) => m.params.chat_id === 3)?.params;
   expect(en.text).toBe('<b>Names are drawn for "Office &lt;Santa&gt;"</b>\nAnnie started the draw. Open the app to see who you\'re gifting to. Budget: up to 50 EUR.');
   expect(en.reply_markup.inline_keyboard[0][0].text).toBe('See my recipient');
-  const ru = msgs.find((m) => m.params.chat_id === 2).params;
+  const ru = msgs.find((m) => m.params.chat_id === 2)?.params;
   expect(ru.text).toBe('<b>Жеребьёвка в обмене «Office &lt;Santa&gt;» прошла</b>\nAnnie запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: до 50 EUR.');
   expect(ru.reply_markup.inline_keyboard[0][0].text).toBe('Кому я дарю');
 });
@@ -61,7 +66,7 @@ test('second draw is ALREADY_DRAWN and notifies nobody again', async () => {
 
 test('concurrent draws: one success, one ALREADY_DRAWN, 5 assignments, 5 messages', async () => {
   const id = await mk(5);
-  const res = await Promise.all([draw({ id }, ann).then(() => 'ok', (e) => e.parameters.code), draw({ id }, ann).then(() => 'ok', (e) => e.parameters.code)]);
+  const res = await Promise.all([draw({ id }, ann).then(() => 'ok', (/** @type {any} */ e) => e.parameters.code), draw({ id }, ann).then(() => 'ok', (/** @type {any} */ e) => e.parameters.code)]);
   expect(res.sort()).toEqual(['ALREADY_DRAWN', 'ok']);
   expect((await rows()).length).toBe(5);
   expect(sent().length).toBe(5);
@@ -69,14 +74,15 @@ test('concurrent draws: one success, one ALREADY_DRAWN, 5 assignments, 5 message
 
 test('lost race at the batch insert (unique index) is ALREADY_DRAWN with no notifications', async () => {
   const id = await mk(3);
-  const real = db.insert;
+  const d = /** @type {any} */ (db); // monkeypatching the fake db
+  const real = d.insert;
   // another invocation commits its batch just before ours
-  db.insert = (t) => ({ values: (v) => ({ run: async () => {
-    db.insert = real;
+  d.insert = (/** @type {any} */ t) => ({ values: (/** @type {any[]} */ v) => ({ run: async () => {
+    d.insert = real;
     await real.call(db, t).values(v.map((x, i) => ({ exchangeId: id, santaId: x.santaId, gifteeId: v[(i + 1) % v.length].santaId }))).run();
     return real.call(db, t).values(v).run();
   } }) });
-  try { expect(await code(() => draw({ id }, ann))).toBe('ALREADY_DRAWN'); } finally { db.insert = real; }
+  try { expect(await code(() => draw({ id }, ann))).toBe('ALREADY_DRAWN'); } finally { d.insert = real; }
   expect(sent().length).toBe(0);
   expect((await rows()).length).toBe(3);
 });
@@ -95,7 +101,7 @@ test('organiser who never joined: message names them by Telegram first name and 
   const id = await mk(4, false);
   await draw({ id }, ann);
   expect(sent().map((m) => m.params.chat_id).sort()).toEqual([2, 3, 4]);
-  expect(sent().find((m) => m.params.chat_id === 3).params.text).toContain('Ann started the draw');
+  expect(sent().find((m) => m.params.chat_id === 3)?.params.text).toContain('Ann started the draw');
   for (const { params: p } of sent()) for (const nick of ['Nick2', 'Nick3', 'Nick4']) expect(p.text).not.toContain(nick);
 });
 

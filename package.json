@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "devDependencies": {
-    "drizzle-orm": "^0.45.4"
+    "@types/bun": "^1.4.2",
+    "drizzle-orm": "^0.45.4",
+    "typescript": "^7.0.2"
   }
 }

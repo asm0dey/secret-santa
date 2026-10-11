@@ -7,19 +7,23 @@ export const MAX_MEMBERS = 100;
 
 // Every membership write is ONE statement conditional on the exchange still being open, so it cannot
 // land after the draw's open -> drawn flip (the read of ex.status before it may be stale).
+/** @param {number} id */
 const stillOpen = (id) => sql`exists (select 1 from exchanges where id = ${id} and status = 'open')`;
 
 // After a refused write: say why, from a fresh read.
+/** @param {number} exchangeId */
 async function refuse(exchangeId) {
   const ex = await db.select().from(exchanges).where(eq(exchanges.id, exchangeId)).get() ?? fail(ERR.NOT_FOUND);
   if (ex.status === 'closed') fail(ERR.CLOSED);
   if (ex.status === 'drawn') fail(ERR.ALREADY_DRAWN);
 }
 
+/** @param {number} exchangeId @param {number} userId */
 const find = (exchangeId, userId) =>
   db.select().from(members).where(and(eq(members.exchangeId, exchangeId), eq(members.userId, userId))).get();
 
 // cols: validated detailsColumns(). Fails ALREADY_DRAWN / CLOSED / FULL / ALREADY_MEMBER.
+/** @param {number} exchangeId @param {number} userId @param {import('./details.js').DetailsColumns} cols @param {number} joinedAt */
 export async function addMember(exchangeId, userId, cols, joinedAt) {
   const c = cols;
   try {
@@ -37,6 +41,7 @@ export async function addMember(exchangeId, userId, cols, joinedAt) {
 }
 
 // Deletes a member row of an open exchange. Fails ALREADY_DRAWN / CLOSED if the exchange left 'open'.
+/** @param {number} exchangeId @param {number} memberId */
 export async function removeMemberRow(exchangeId, memberId) {
   await db.delete(members).where(and(eq(members.id, memberId), stillOpen(exchangeId))).run();
   if (await db.select().from(members).where(eq(members.id, memberId)).get()) await refuse(exchangeId);

@@ -14,12 +14,13 @@ test('codes: normalize, generate, display', () => {
   expect(normalizeCode('K7Q4MXX')).toBeNull();
   for (let i = 0; i < 200; i++) expect(newCode()).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
   expect(newCode(() => 0)).toBe(ALPHABET[0].repeat(6));
-  expect(newCode(() => 0.999999)).toBe(ALPHABET.at(-1).repeat(6));
+  expect(newCode(() => 0.999999)).toBe(/** @type {string} */ (ALPHABET.at(-1)).repeat(6));
   expect(displayCode('ABC234')).toBe('ABC-234');
 });
 
 test('formatBudget in both languages', () => {
   const cur = 'RUB';
+  /** @type {[any, string, string][]} */
   const cases = [
     [{ kind: 'any' }, 'any budget', 'любой бюджет'],
     [{ kind: 'max', max: 3000, currency: cur }, `up to 3${NB}000 RUB`, `до 3${NB}000 RUB`],

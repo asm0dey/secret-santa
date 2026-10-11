@@ -8,6 +8,11 @@ import { removeMemberRow } from '../lib/membership.js';
 import { send, esc } from '../lib/notify.js';
 import { t } from '../lib/i18n.js';
 
+/**
+ * @param {{ id: number, userId: number }} input
+ * @param {import('../lib/types.js').EndpointCtx} ctx
+ * @returns {Promise<{ ok: true }>}
+ */
 export default async function ({ id, userId }, ctx) {
   const me = await enter(ctx);
   const ex = await loadExchange(id);

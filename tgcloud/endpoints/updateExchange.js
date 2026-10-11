@@ -6,6 +6,11 @@ import { ERR, fail } from '../lib/errors.js';
 import { loadExchange, requireOrganiser, requireStatus } from '../lib/access.js';
 import { cleanName, budgetColumns, deadlineColumns } from '../lib/exchangeFields.js';
 
+/**
+ * @param {{ id: number, name?: unknown, budget?: unknown, deadline?: unknown }} input
+ * @param {import('../lib/types.js').EndpointCtx} ctx
+ * @returns {Promise<{ ok: true }>}
+ */
 export default async function ({ id, name, budget, deadline }, ctx) {
   const me = await enter(ctx);
   const ex = await loadExchange(id);

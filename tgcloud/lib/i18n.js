@@ -1,9 +1,13 @@
+/** @param {unknown} code @returns {import('./types.js').Lang} */
 export const langOf = (code) => (String(code ?? '').toLowerCase().startsWith('ru') ? 'ru' : 'en');
 
-export const makeT = (dict) => (lang, key, params = {}) => {
+/** @param {Record<string, Record<string, string>>} dict */
+export const makeT = (dict) =>
+  /** @param {string} lang @param {string} key @param {Record<string, string | number>} [params] */
+  (lang, key, params = {}) => {
   const s = dict[lang]?.[key] ?? dict.en[key];
   if (s === undefined) throw new Error(`i18n: unknown key "${key}"`);
-  return s.replace(/\{(\w+)\}/g, (m, k) => (k in params ? params[k] : m));
+  return s.replace(/\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m));
 };
 
 // Bot strings. Later tasks add keys to both languages.

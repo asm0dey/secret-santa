@@ -17,7 +17,9 @@ const bob = ctxFor({ id: 2, first_name: 'Bob', language_code: 'ru' });
 const cat = ctxFor({ id: 3, first_name: 'Cat', language_code: 'en' });
 const input = { name: 'Office <Santa>', budget: { kind: 'max', max: 50, currency: 'EUR' }, deadline: '2026-12-20' };
 
-const code = async (fn) => { try { await fn(); } catch (e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {() => unknown} fn */
+const code = async (fn) => { try { await fn(); } catch (/** @type {any} */ e) { expect(e).toBeInstanceOf(EndpointError); return e.parameters.code; } };
+/** @param {number} exchangeId @param {number} userId */
 const join = (exchangeId, userId) => db.insert(members).values({ exchangeId, userId, nickname: 'n', joinedAt: 1 }).run();
 
 test('create returns a 6-char code, sets fields, appears in home as waiting organiser', async () => {
@@ -56,7 +58,7 @@ test('create retries on a code clash', async () => {
   await db.insert(exchanges).values({ code: 'AAAAAA', name: 'old', organiserId: 9, status: 'open' }).run();
   const real = crypto.getRandomValues.bind(crypto);
   let n = 0;
-  const spy = spyOn(crypto, 'getRandomValues').mockImplementation((arr) => (n++ < 6 ? (arr[0] = 0, arr) : real(arr)));
+  const spy = spyOn(crypto, 'getRandomValues').mockImplementation((/** @type {any} */ arr) => (n++ < 6 ? (arr[0] = 0, arr) : real(arr)));
   try {
     const { code: c } = await createExchange(input, ann);
     expect(c).not.toBe('AAAAAA');
@@ -88,7 +90,7 @@ test('update after the draw: only the deadline; closed: CLOSED', async () => {
   expect(await code(() => updateExchange({ id, budget: { kind: 'any' } }, ann))).toBe('ALREADY_DRAWN');
   expect(await code(() => updateExchange({ id, name: 'N' }, ann))).toBe('ALREADY_DRAWN');
   expect(await code(() => updateExchange({ id, name: 'N', deadline: '2027-02-01' }, ann))).toBe('ALREADY_DRAWN');
-  expect((await db.select().from(exchanges).get()).deadline).toBe('2026-12-20');
+  expect((await db.select().from(exchanges).get())?.deadline).toBe('2026-12-20');
   expect(await updateExchange({ id, deadline: '2027-02-01' }, ann)).toEqual({ ok: true });
   expect(await db.select().from(exchanges).get()).toMatchObject({ deadline: '2027-02-01', closeAt: closeAtFor('2027-02-01'), name: 'Office <Santa>' });
   await db.update(exchanges).set({ status: 'closed' }).where(eq(exchanges.id, id)).run();

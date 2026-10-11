@@ -1,10 +1,15 @@
 // Uniform float in [0, 1); crypto-backed when available. Shared with code.js.
 export const defaultRand = () =>
-  globalThis.crypto?.getRandomValues
+  typeof globalThis.crypto?.getRandomValues === 'function'
     ? crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32
     : Math.random();
 
 // Random derangement: shuffle, retry while anyone draws themselves (~e tries).
+/**
+ * @param {number[]} ids
+ * @param {() => number} [rand]
+ * @returns {{ santaId: number, gifteeId: number }[]}
+ */
 export function derange(ids, rand = defaultRand) {
   if (ids.length < 3) throw new Error('TOO_FEW');
   for (;;) {
