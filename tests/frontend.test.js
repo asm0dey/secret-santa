@@ -170,6 +170,41 @@ test('router: backOrReplace goes back when the previous entry is that path, else
   }
 });
 
+test('router: a cold start with an empty hash counts as #/ for backOrReplace', () => {
+  const g = /** @type {any} */ (globalThis);
+  /** @type {(() => void)[]} */
+  const listeners = [];
+  /** @type {string[]} */
+  const log = [];
+  /** @type {{ hash: string, state: any }[]} */
+  const entries = [{ hash: '', state: null }];
+  let i = 0;
+  g.addEventListener = (/** @type {string} */ _e, /** @type {() => void} */ l) => listeners.push(l);
+  g.location = {
+    search: '',
+    get hash() { return entries[i].hash; },
+    set hash(h) { entries.length = i + 1; entries.push({ hash: h, state: null }); i += 1; listeners.forEach((l) => l()); },
+    replace(/** @type {string} */ h) { entries[i] = { hash: h, state: null }; log.push('replace ' + h); },
+  };
+  g.history = {
+    get state() { return entries[i].state; },
+    replaceState(/** @type {any} */ s) { entries[i].state = s; },
+    back() { i -= 1; log.push('back'); listeners.forEach((l) => l()); },
+  };
+  try {
+    initRouter();
+    g.location.hash = '#/x/3'; // opened the exchange from the cold-start page
+    backOrReplace('#/'); // the previous entry has an empty hash: that is #/, so go back
+    expect(log).toEqual(['back']);
+    g.location.hash = '#/x/4';
+    log.length = 0;
+    backOrReplace('/x/9'); // the previous entry is #/, not /x/9: replace
+    expect(log).toEqual(['replace #/x/9']);
+  } finally {
+    for (const k of ['addEventListener', 'location', 'history']) delete g[k];
+  }
+});
+
 test('i18n: join and exchange summaries pluralise with extra params', async () => {
   const { tn } = await import('../src/lib/i18n.js');
   expect(tn('join.summary', 1, { organiser: 'Anna' })).toBe('Anna is organising · 1 person joined');

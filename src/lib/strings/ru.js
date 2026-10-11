@@ -186,5 +186,6 @@ export default {
   'errors.NOT_DRAWN': 'Жеребьёвка ещё не прошла',
   'errors.CLOSED': 'Этот обмен завершён',
   'errors.NOT_YET': 'Ещё рано: дождитесь, пока пройдёт срок',
+  'errors.EXCHANGE_GONE': 'Этого обмена больше нет',
   'errors.INTERNAL': 'Что-то пошло не так. Попробуйте ещё раз',
 };

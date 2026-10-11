@@ -71,7 +71,7 @@ function track() {
     history.replaceState({ n: at }, '');
     trail.length = at + 1;
   }
-  trail[at] = location.hash;
+  trail[at] = location.hash || '#/'; // a cold start has an empty hash: same place as '#/'
   replacing = false;
 }
 

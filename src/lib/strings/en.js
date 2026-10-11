@@ -186,5 +186,6 @@ export default {
   'errors.NOT_DRAWN': 'Names are not drawn yet',
   'errors.CLOSED': 'This exchange has closed',
   'errors.NOT_YET': 'Not yet: wait until the deadline has passed',
+  'errors.EXCHANGE_GONE': 'This exchange no longer exists',
   'errors.INTERNAL': 'Something went wrong. Please try again',
 };
