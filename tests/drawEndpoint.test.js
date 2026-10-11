@@ -40,7 +40,7 @@ test('draw: a valid pairing, status drawn, one private message per member', asyn
   expect(msgs.map((m) => m.params.chat_id).sort()).toEqual([1, 2, 3, 4, 5]);
   for (const { params: p } of msgs) {
     expect(p.text).toContain('Office &lt;Santa&gt;');
-    for (const other of ['Nick2', 'Nick3', 'Nick4', 'Nick5', 'Name2', 'Name3']) expect(p.text).not.toContain(other);
+    for (const other of ['Nick2', 'Nick3', 'Nick4', 'Nick5', 'Name2', 'Name3', 'Name4', 'Name5']) expect(p.text).not.toContain(other);
     expect(p.reply_markup.inline_keyboard[0][0].web_app.url).toEndWith(`#/x/${id}/giftee`);
   }
   const en = msgs.find((m) => m.params.chat_id === 3).params;
@@ -96,6 +96,7 @@ test('organiser who never joined: message names them by Telegram first name and 
   await draw({ id }, ann);
   expect(sent().map((m) => m.params.chat_id).sort()).toEqual([2, 3, 4]);
   expect(sent().find((m) => m.params.chat_id === 3).params.text).toContain('Ann started the draw');
+  for (const { params: p } of sent()) for (const nick of ['Nick2', 'Nick3', 'Nick4']) expect(p.text).not.toContain(nick);
 });
 
 test('fewer than 3 members is TOO_FEW', async () => {

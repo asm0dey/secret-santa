@@ -1,10 +1,10 @@
 import { db } from 'sdk';
-import { eq, and } from 'sdk/db';
+import { eq, and, sql } from 'sdk/db';
 import { exchanges, members, assignments, users } from '../schema.js';
 import { enter } from '../lib/session.js';
 import { ERR, fail } from '../lib/errors.js';
 import { clock } from '../lib/clock.js';
-import { loadExchange, requireOrganiser, requireStatus } from '../lib/access.js';
+import { loadExchange, requireOrganiser } from '../lib/access.js';
 import { derange } from '../lib/draw.js';
 import { formatBudget } from '../lib/budget.js';
 import { budgetOf } from '../lib/exchangeFields.js';
@@ -14,39 +14,48 @@ import { t } from '../lib/i18n.js';
 const hasAssignments = async (exchangeId) =>
   !!(await db.select({ id: assignments.id }).from(assignments).where(eq(assignments.exchangeId, exchangeId)).get());
 
-const markDrawn = (ex) =>
-  db.update(exchanges).set({ status: 'drawn', drawnAt: clock.now() })
-    .where(and(eq(exchanges.id, ex.id), eq(exchanges.status, 'open'))).run();
+// Step 1: win the open -> drawn flip (also fails TOO_FEW atomically: the member count is part of the condition).
+async function flip(ex) {
+  const token = crypto.randomUUID();
+  await db.update(exchanges).set({ status: 'drawn', drawnAt: clock.now(), drawToken: token })
+    .where(and(
+      eq(exchanges.id, ex.id), eq(exchanges.status, 'open'),
+      sql`(select count(*) from members where exchange_id = ${ex.id}) >= 3`,
+    )).run();
+  const now = await loadExchange(ex.id);
+  if (now.drawToken === token) return;
+  fail(now.status === 'open' ? ERR.TOO_FEW : ERR.ALREADY_DRAWN);
+}
 
 export default async function ({ id }, ctx) {
   const me = await enter(ctx);
   const ex = await loadExchange(id);
   requireOrganiser(ex, me.id);
-  requireStatus(ex, 'open');
-
-  // Crash recovery / lost race: assignments are the source of truth.
-  if (await hasAssignments(ex.id)) {
-    await markDrawn(ex);
-    fail(ERR.ALREADY_DRAWN);
+  if (ex.status === 'closed') fail(ERR.CLOSED);
+  // 'drawn' without assignments = a crash between flip and insert: this call finishes the job.
+  if (ex.status === 'drawn') {
+    if (await hasAssignments(ex.id)) fail(ERR.ALREADY_DRAWN);
+  } else {
+    await flip(ex);
   }
-  const mems = await db.select().from(members).where(eq(members.exchangeId, ex.id)).all();
-  if (mems.length < 3) fail(ERR.TOO_FEW);
 
+  // Members are frozen once the exchange is 'drawn', so reading them now is safe.
+  const mems = await db.select().from(members).where(eq(members.exchangeId, ex.id)).all();
   const rows = derange(mems.map((m) => m.userId)).map((p) => ({ exchangeId: ex.id, ...p }));
   try {
-    await db.insert(assignments).values(rows).run(); // one statement = atomic; unique indexes reject a concurrent batch
+    await db.insert(assignments).values(rows).run(); // one statement = atomic; unique indexes reject a second batch
   } catch (e) {
-    
-    if (await hasAssignments(ex.id)) fail(ERR.ALREADY_DRAWN);
+    if (await hasAssignments(ex.id)) fail(ERR.ALREADY_DRAWN); // another recovery won
     throw e;
   }
-  await markDrawn(ex);
 
+  // Only the request whose insert succeeded gets here: notifications go out once.
+  const langs = new Map((await db.select().from(users)
+    .where(sql`${users.id} in (select user_id from members where exchange_id = ${ex.id})`).all()).map((u) => [u.id, u.lang]));
   const organiser = esc(mems.find((m) => m.userId === ex.organiserId)?.nickname ?? me.firstName);
   const exchange = esc(ex.name);
   for (const m of mems) {
-    const u = await db.select().from(users).where(eq(users.id, m.userId)).get();
-    const lang = u?.lang ?? 'en';
+    const lang = langs.get(m.userId) ?? 'en';
     await send(m.userId, t(lang, 'drawn', { exchange, organiser, budget: formatBudget(budgetOf(ex), lang) }),
       [[{ text: t(lang, 'btnSeeRecipient'), app: `#/x/${ex.id}/giftee` }]]);
   }
