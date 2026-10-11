@@ -34,12 +34,12 @@ test('enter canMessage: unknown stays null, false is stored', async () => {
 test('enter computes blocked from active blocks only', async () => {
   const u = ctxFor({ id: 5, first_name: 'B' });
   expect((await enter(u)).blocked).toBe(false);
-  await db.insert(blocks).values({ userId: 5, organiserId: 9, decision: 'unblocked' }).run();
+  await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1, decision: 'unblocked' }).run();
   expect((await enter(u)).blocked).toBe(false);
-  await db.insert(blocks).values({ userId: 5, organiserId: 9, decision: 'kept' }).run();
+  await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1, decision: 'kept' }).run();
   expect((await enter(u)).blocked).toBe(true);
   await db.delete(blocks).run();
-  await db.insert(blocks).values({ userId: 5, organiserId: 9 }).run();
+  await db.insert(blocks).values({ userId: 5, organiserId: 9, exchangeId: 1 }).run();
   expect((await enter(u)).blocked).toBe(true);
 });
 

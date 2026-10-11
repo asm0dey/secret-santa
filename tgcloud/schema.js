@@ -29,8 +29,8 @@ export const exchanges = table('exchanges', {
 
 export const members = table('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  exchangeId: integer('exchange_id'),
-  userId: integer('user_id'),
+  exchangeId: integer('exchange_id').notNull(),
+  userId: integer('user_id').notNull(),
   nickname: text('nickname'),
   address: text('address'),
   wishMode: text('wish_mode'), // ideas|surprise
@@ -41,9 +41,9 @@ export const members = table('members', {
 
 export const assignments = table('assignments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  exchangeId: integer('exchange_id'),
-  santaId: integer('santa_id'),
-  gifteeId: integer('giftee_id'),
+  exchangeId: integer('exchange_id').notNull(),
+  santaId: integer('santa_id').notNull(),
+  gifteeId: integer('giftee_id').notNull(),
   seenAt: integer('seen_at'),
   sentAt: integer('sent_at'),
   tracking: text('tracking'),
@@ -55,8 +55,8 @@ export const assignments = table('assignments', {
 
 export const messages = table('messages', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  exchangeId: integer('exchange_id'),
-  assignmentId: integer('assignment_id'),
+  exchangeId: integer('exchange_id').notNull(),
+  assignmentId: integer('assignment_id').notNull(),
   fromSanta: integer('from_santa'),
   text: text('text'),
   createdAt: integer('created_at'),
@@ -64,9 +64,9 @@ export const messages = table('messages', {
 
 export const blocks = table('blocks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id'),
-  organiserId: integer('organiser_id'),
-  exchangeId: integer('exchange_id'),
+  userId: integer('user_id').notNull(),
+  organiserId: integer('organiser_id').notNull(),
+  exchangeId: integer('exchange_id').notNull(),
   exchangeName: text('exchange_name'),
   createdAt: integer('created_at'),
   appealText: text('appeal_text'),

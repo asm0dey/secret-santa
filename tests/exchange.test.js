@@ -49,7 +49,7 @@ test('create rejects bad input and writes nothing', async () => {
 });
 
 test('create is BLOCKED for a blocked user', async () => {
-  await db.insert(blocks).values({ userId: 1, organiserId: 9, exchangeName: 'E', createdAt: 1 }).run();
+  await db.insert(blocks).values({ userId: 1, organiserId: 9, exchangeId: 1, exchangeName: 'E', createdAt: 1 }).run();
   expect(await code(() => createExchange(input, ann))).toBe('BLOCKED');
   expect(await db.select().from(exchanges).all()).toEqual([]);
 });
@@ -150,10 +150,10 @@ test('home: lists my exchanges newest first with views, counts and active blocks
   await db.insert(assignments).values({ exchangeId: a, santaId: 1, gifteeId: 2, seenAt: null }).run();
   await db.update(exchanges).set({ status: 'closed' }).where(eq(exchanges.id, b)).run();
   await db.insert(blocks).values([
-    { userId: 1, organiserId: 5, exchangeName: 'Old', createdAt: 5, decision: 'unblocked' },
-    { userId: 1, organiserId: 6, exchangeName: 'Bad', createdAt: 7, appealAt: 8 },
-    { userId: 1, organiserId: 6, exchangeName: 'Kept', createdAt: 9, appealAt: 10, decision: 'kept' },
-    { userId: 2, organiserId: 6, exchangeName: 'Other', createdAt: 9 },
+    { userId: 1, organiserId: 5, exchangeId: 1, exchangeName: 'Old', createdAt: 5, decision: 'unblocked' },
+    { userId: 1, organiserId: 6, exchangeId: 1, exchangeName: 'Bad', createdAt: 7, appealAt: 8 },
+    { userId: 1, organiserId: 6, exchangeId: 1, exchangeName: 'Kept', createdAt: 9, appealAt: 10, decision: 'kept' },
+    { userId: 2, organiserId: 6, exchangeId: 1, exchangeName: 'Other', createdAt: 9 },
   ]).run();
 
   let h = await home({}, ann);

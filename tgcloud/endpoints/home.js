@@ -6,6 +6,11 @@ import { enter } from '../lib/session.js';
 /**
  * @param {{}} input
  * @param {import('../lib/types.js').EndpointCtx} ctx
+ * @returns {Promise<{
+ *   me: { id: number, firstName: string, lang: import('../lib/types.js').Lang,
+ *         blocks: { id: number, exchangeName: string | null, createdAt: number | null, appealed: boolean, decision: string | null }[] },
+ *   exchanges: { id: number, name: string, status: string | null, view: 'waiting' | 'closed' | 'drawn' | 'see', isOrganiser: boolean, memberCount: number }[],
+ * }>}
  */
 export default async function ({}, ctx) {
   const me = await enter(ctx);
@@ -16,6 +21,7 @@ export default async function ({}, ctx) {
   const list = [];
   for (const ex of mine) {
     const { n } = /** @type {{ n: number }} */ (await db.select({ n: count() }).from(members).where(eq(members.exchangeId, ex.id)).get());
+    /** @type {'waiting' | 'closed' | 'drawn' | 'see'} */
     let view = ex.status === 'open' ? 'waiting' : ex.status === 'closed' ? 'closed' : 'drawn';
     if (view === 'drawn') {
       const a = await db.select().from(assignments)

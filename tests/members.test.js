@@ -54,7 +54,7 @@ test('join errors: unknown code, repeat, blocked, bad details', async () => {
   for (const d of bads) expect(await code(() => join({ code: c, details: d }, cat))).toBe('BAD_INPUT');
   await join({ code: c, details: { ...ideas, nickname: 'x'.repeat(40), address: 'a'.repeat(500), wishlistUrl: '', wishes: 'w'.repeat(1000) } }, cat);
   expect((await db.select().from(members).where(eq(members.userId, 3)).get())?.wishlistUrl).toBeNull();
-  await db.insert(blocks).values({ userId: 4, organiserId: 1, exchangeName: 'E', createdAt: 1 }).run();
+  await db.insert(blocks).values({ userId: 4, organiserId: 1, exchangeId: 1, exchangeName: 'E', createdAt: 1 }).run();
   expect(await code(() => join({ code: c, details: ideas }, user(4, 'Dan')))).toBe('BLOCKED');
   expect((await db.select().from(members).all()).length).toBe(2);
   expect(id).toBeGreaterThan(0);

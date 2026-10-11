@@ -48,7 +48,7 @@ export default async function ({ id }, ctx) {
 
   // Members are frozen once the exchange is 'drawn', so reading them now is safe.
   const mems = await db.select().from(members).where(eq(members.exchangeId, ex.id)).all();
-  const rows = derange(mems.map((m) => /** @type {number} */ (m.userId))).map((p) => ({ exchangeId: ex.id, ...p }));
+  const rows = derange(mems.map((m) => m.userId)).map((p) => ({ exchangeId: ex.id, ...p }));
   try {
     await db.insert(assignments).values(rows).run(); // one statement = atomic; unique indexes reject a second batch
   } catch (e) {
@@ -62,9 +62,8 @@ export default async function ({ id }, ctx) {
   const organiser = esc(mems.find((m) => m.userId === ex.organiserId)?.nickname ?? me.firstName);
   const exchange = esc(ex.name);
   for (const m of mems) {
-    const userId = /** @type {number} */ (m.userId);
-    const lang = langs.get(userId) ?? 'en';
-    await send(userId, t(lang, 'drawn', { exchange, organiser, budget: formatBudget(budgetOf(ex), lang) }),
+    const lang = langs.get(m.userId) ?? 'en';
+    await send(m.userId, t(lang, 'drawn', { exchange, organiser, budget: formatBudget(budgetOf(ex), lang) }),
       [[{ text: t(lang, 'btnSeeRecipient'), app: `#/x/${ex.id}/giftee` }]]);
   }
   return { ok: true };

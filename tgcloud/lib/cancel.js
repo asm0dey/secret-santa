@@ -16,7 +16,7 @@ export async function cancelExchange(ex) {
     .filter((m) => m.userId !== ex.organiserId);
   await db.delete(members).where(eq(members.exchangeId, ex.id)).run();
   for (const m of others) {
-    const u = await db.select().from(users).where(eq(users.id, /** @type {number} */ (m.userId))).get();
-    await send(/** @type {number} */ (m.userId), t(u?.lang ?? 'en', 'exchangeCancelled', { exchange: esc(ex.name) }));
+    const u = await db.select().from(users).where(eq(users.id, m.userId)).get();
+    await send(m.userId, t(u?.lang ?? 'en', 'exchangeCancelled', { exchange: esc(ex.name) }));
   }
 }
