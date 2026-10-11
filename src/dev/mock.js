@@ -1,7 +1,9 @@
 // Dev-only stand-in for the backend. Every handler is typed against the real endpoint, so a shape change in tgcloud/
 // fails `bun run typecheck` here. Flags (query string): ?as=member (waiting room as a non-organiser), ?blocked,
 // ?few (exchange 1 has 2 members: the draw is disabled), ?unjoined (the organiser has not joined exchange 1),
-// ?race (the first draw of exchange 1 answers ALREADY_DRAWN).
+// ?race (the first draw of exchange 1 answers ALREADY_DRAWN). After the draw: ?giftee=surprise|nowish (what exchange 2's
+// giftee wrote), ?gift=notsent|onway|received (exchange 2, my own gift), ?santa=nouser (the overdue Santa has no @username),
+// ?undelivered (messageSanta cannot deliver), ?empty (empty chat thread), ?blocked (two blocks: one appealed, one not).
 // Exchanges: 1 waiting (code K7Q4MX), 2 drawn, first view "see" (code DRW234), 3 drawn past its deadline with one
 // overdue Santa (code LATE23), 4 closed (code CLS234), 5 drawn but the assignments were never written (code PEND23).
 
@@ -39,6 +41,8 @@ const flags = new URLSearchParams(location.search);
 const asMember = flags.get('as') === 'member';
 const few = flags.has('few');
 const unjoined = flags.has('unjoined') && !asMember;
+const gifteeKind = flags.get('giftee');
+const giftFlag = flags.get('gift');
 
 /** @param {number} days from today, may be negative */
 const day = (days) => new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
@@ -79,13 +83,16 @@ const removed = new Set();
 /** @param {number} id */
 const peopleOf = (id) => PEOPLE.filter((p) => !removed.has(p.userId) && !(id === 1 && ((few && p.userId > 102) || (unjoined && p.userId === ME))));
 let seen2 = false; // exchange 2 shows as "see recipient" on home until its giftee tab was opened
-let sent2 = false;
-let received2 = false;
-let appealed = false;
+/** What I, as Santa, marked as sent, by exchange id. @type {Map<number, { at: number, tracking: string | null }>} */
+const sent = new Map();
+let received2 = giftFlag === 'received';
+/** @type {Set<number>} */
+const appealedIds = new Set([8]);
 /** @type {{ fromSanta: boolean, text: string, at: number }[]} */
-const thread = [
-  { fromSanta: true, text: 'Hi! Any size preferences for the scarf?', at: Date.now() - 3 * 3600_000 },
+const thread = flags.has('empty') ? [] : [
+  { fromSanta: true, text: 'Hi! Any size preferences for the scarf?', at: Date.now() - 30 * 3600_000 },
   { fromSanta: false, text: 'Hello Santa! Medium is perfect, thank you.', at: Date.now() - 2 * 3600_000 },
+  { fromSanta: true, text: 'Great, noted.\nAny colours you dislike?', at: Date.now() - 3600_000 },
 ];
 
 /** @param {number} id @returns {ExchangeView} */
@@ -102,10 +109,10 @@ function exchangeView(id) {
   const you = (id === 1 && !unjoined) || id === 5 || live; // closed exchanges keep no personal data
   /** @type {OverdueRow[]} */
   const overdue = id === 3 && isOrganiser
-    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: 'chloe_k' }]
+    ? [{ gifteeUserId: 102, gifteeName: 'Boris', santaUserId: 103, santaName: 'Chloe', santaUsername: flags.get('santa') === 'nouser' ? null : 'chloe_k' }]
     : [];
   const myGift = live
-    ? /** @type {NonNullable<ExchangeView['myGift']>} */ ({ status: id === 2 ? (received2 ? 'received' : 'on_way') : 'not_sent', tracking: id === 2 ? 'RB987654321CN' : null, sentAt: id === 2 ? Date.now() - 2 * DAY : null })
+    ? /** @type {NonNullable<ExchangeView['myGift']>} */ ({ status: id === 2 ? (received2 ? 'received' : giftFlag === 'notsent' ? 'not_sent' : 'on_way') : 'not_sent', tracking: id === 2 && giftFlag !== 'notsent' ? 'RB987654321CN' : null, sentAt: id === 2 && giftFlag !== 'notsent' ? Date.now() - 2 * DAY : null })
     : null;
   return {
     id, name: ex.name, code: ex.code, displayCode: `${ex.code.slice(0, 3)}-${ex.code.slice(3)}`,
@@ -117,9 +124,11 @@ function exchangeView(id) {
     drawPending,
     giftee: live
       ? {
-          nickname: GIFTEE, address: '5 Birch Lane\nShelbyville 54321', wishMode: 'ideas',
-          wishlistUrl: 'https://example.com/boris-wishlist', wishes: 'Warm socks.\nCoffee beans.\nNo perfume.',
-          sentAt: id === 2 && sent2 ? Date.now() : null, tracking: id === 2 && sent2 ? 'RB123456789CN' : null,
+          nickname: GIFTEE, address: '5 Birch Lane\nShelbyville 54321',
+          wishMode: gifteeKind === 'surprise' ? 'surprise' : 'ideas',
+          wishlistUrl: gifteeKind ? null : 'https://example.com/boris-wishlist',
+          wishes: gifteeKind ? null : 'Warm socks.\nCoffee beans.\nNo perfume.',
+          sentAt: sent.get(id)?.at ?? null, tracking: sent.get(id)?.tracking ?? null,
         }
       : null,
     myGift,
@@ -135,7 +144,10 @@ const handlers = {
     me: {
       id: myId, firstName: asMember ? 'Boris' : 'Anna', lang: 'en',
       blocks: flags.has('blocked')
-        ? [{ id: 7, exchangeName: 'Book Club Swap', createdAt: Date.now() - 5 * DAY, appealed, decision: null }]
+        ? [
+            { id: 7, exchangeName: 'Book Club Swap', createdAt: Date.now() - 5 * DAY, appealed: appealedIds.has(7), decision: null },
+            { id: 8, exchangeName: 'Class of 2019', createdAt: Date.now() - 9 * DAY, appealed: appealedIds.has(8), decision: null },
+          ]
         : [],
     },
     exchanges: [
@@ -183,8 +195,8 @@ const handlers = {
     EX[id].status = 'drawn';
     return { ok: true };
   },
-  markSent: () => {
-    sent2 = true;
+  markSent: ({ id, tracking }) => {
+    sent.set(id, { at: sent.get(id)?.at ?? Date.now(), tracking: tracking?.trim() || sent.get(id)?.tracking || null });
     return { ok: true };
   },
   markReceived: () => {
@@ -196,10 +208,10 @@ const handlers = {
     return { ok: true };
   },
   nudge: () => ({ sent: 1 }),
-  messageSanta: () => ({ ok: true, delivered: true }),
+  messageSanta: () => ({ ok: true, delivered: !flags.has('undelivered') }),
   block: () => ({ ok: true }),
-  submitAppeal: () => {
-    appealed = true;
+  submitAppeal: ({ blockId }) => {
+    appealedIds.add(blockId);
     return { ok: true };
   },
   decideAppeal: () => ({ ok: true }),

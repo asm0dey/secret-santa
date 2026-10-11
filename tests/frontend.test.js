@@ -211,3 +211,33 @@ test('i18n: join and exchange summaries pluralise with extra params', async () =
   expect(tn('join.summary', 4, { organiser: 'Anna' })).toBe('Anna is organising · 4 people joined');
   expect(tn('exchange.summary', 5, { budget: 'any budget', date: '20 Dec' })).toBe('5 people joined · any budget · gifts by 20 Dec');
 });
+
+test('format: deadlines read "20 Dec" (UTC, day first); chat stamps drop the day for today', async () => {
+  const { shortDate, stamp } = await import('../src/lib/format.js');
+  expect(shortDate('2026-12-20')).toBe('20\u00a0Dec');
+  expect(shortDate('2026-01-01')).toBe('1\u00a0Jan'); // not shifted by the local zone
+  const noon = Date.parse('2026-12-20T12:00:00');
+  expect(stamp(noon, noon + 60_000)).toMatch(/^12:00$/);
+  expect(stamp(noon, noon + 2 * 86_400_000)).toMatch(/^20\u00a0Dec 12:00$/);
+});
+
+test('overlay: BackButton closes the topmost dialog first, then reports there is none', async () => {
+  const { onBackClose, closeTopOverlay } = await import('../src/lib/overlay.js');
+  /** @type {string[]} */
+  const closed = [];
+  const off1 = onBackClose(() => closed.push('sheet'));
+  onBackClose(() => closed.push('confirm'));
+  expect(closeTopOverlay()).toBe(true);
+  expect(closed).toEqual(['confirm']);
+  off1(); // unmounted on its own
+  expect(closeTopOverlay()).toBe(false);
+});
+
+test('strings: plural keys carry all four forms in both languages', () => {
+  for (const base of ['progress.deadlinePassed', 'progress.nudged']) {
+    for (const form of ['one', 'few', 'many', 'other']) {
+      expect(`${base}.${form}` in en).toBe(true);
+      expect(`${base}.${form}` in ru).toBe(true);
+    }
+  }
+});

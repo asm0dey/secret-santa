@@ -5,6 +5,8 @@
   import { go, backOrReplace } from '../lib/router.js';
   import { t, tn, lang, errorText } from '../lib/i18n.js';
   import { share } from '../lib/tg.js';
+  import { shortDate } from '../lib/format.js';
+  import { AVATAR, initial } from '../lib/ui.js';
   import { formatBudget } from '../../tgcloud/lib/budget.js';
   import ConfirmDialog from '../components/ConfirmDialog.svelte';
 
@@ -14,8 +16,6 @@
   /** @type {{ view: ExchangeView, reload: () => Promise<void> }} */
   let { view, reload } = $props();
 
-  const AVATAR = ['bg-primary text-primary-content', 'bg-secondary text-secondary-content', 'bg-accent text-accent-content', 'bg-base-300 text-base-content'];
-  const day = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
   let confirm = $state(/** @type {Confirm | null} */ (null));
   /** Open ⋯ menu: 'ex' or a member's user id. */
@@ -159,14 +159,14 @@
   {/if}
 
   <p class="text-sm opacity-70">
-    {tn('exchange.summary', view.members.length, { budget: formatBudget(view.budget, lang), date: view.deadline ? day.format(Date.parse(`${view.deadline}T00:00:00Z`)) : '—' })}
+    {tn('exchange.summary', view.members.length, { budget: formatBudget(view.budget, lang), date: view.deadline ? shortDate(view.deadline) : '—' })}
   </p>
 
   <ul class="list rounded-box bg-base-200">
     {#each view.members as m, i (m.userId)}
       <li class="list-row items-center">
         <div class="avatar avatar-placeholder" aria-hidden="true">
-          <div class={['w-9 rounded-full', AVATAR[i % AVATAR.length]]}><span>{[...(m.nickname ?? '?')][0]?.toUpperCase()}</span></div>
+          <div class={['w-9 rounded-full', AVATAR[i % AVATAR.length]]}><span>{initial(m.nickname)}</span></div>
         </div>
         <div class="min-w-0">
           <p class="truncate font-medium">{m.nickname}{m.isMe ? ` (${t('common.you')})` : ''}</p>
