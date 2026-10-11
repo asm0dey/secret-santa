@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, spyOn } from 'bun:test';
-import { api, db, EndpointError } from 'sdk';
+import { api, db, sqlite, EndpointError } from 'sdk';
 import { eq } from 'sdk/db';
 import { resetDb, ctxFor, setNow } from '../test/helpers.js';
 import { exchanges, members, assignments, blocks } from '../tgcloud/schema.js';
@@ -95,6 +95,26 @@ test('update after the draw: only the deadline; closed: CLOSED', async () => {
   expect(await db.select().from(exchanges).get()).toMatchObject({ deadline: '2027-02-01', closeAt: closeAtFor('2027-02-01'), name: 'Office <Santa>' });
   await db.update(exchanges).set({ status: 'closed' }).where(eq(exchanges.id, id)).run();
   expect(await code(() => updateExchange({ id, deadline: '2027-03-01' }, ann))).toBe('CLOSED');
+});
+
+test('name/budget edits are conditional on open: a draw/close landing after the status read refuses them', async () => {
+  for (const [status, err] of [['drawn', 'ALREADY_DRAWN'], ['closed', 'CLOSED']]) {
+    for (const patch of [{ name: 'New' }, { budget: { kind: 'any' } }]) {
+      resetDb(); setNow(NOW);
+      const { id } = await createExchange(input, ann);
+      const d = /** @type {any} */ (db); // monkeypatching the fake db
+      const orig = d.update;
+      // the status flips between updateExchange's read and its write
+      d.update = (/** @type {any[]} */ ...a) => {
+        if (a[0] !== exchanges) return orig.apply(db, a);
+        d.update = orig;
+        sqlite.run('update exchanges set status = ? where id = ?', [status, id]);
+        return orig.apply(db, a);
+      };
+      try { expect(await code(() => updateExchange({ id, ...patch }, ann))).toBe(err); } finally { d.update = orig; }
+      expect(await db.select().from(exchanges).get()).toMatchObject({ name: 'Office <Santa>', budgetKind: 'max', budgetMax: 50, status });
+    }
+  }
 });
 
 test('delete: organiser only, open only; notifies members (not organiser) in their language, escaped', async () => {
