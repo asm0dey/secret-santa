@@ -4,13 +4,16 @@
   import { replace, backOrReplace } from '../lib/router.js';
   import { t, lang, errorText } from '../lib/i18n.js';
   import Segmented from '../components/Segmented.svelte';
+  import { isValidFutureDate } from '../../tgcloud/lib/dates.js';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
 
   const KINDS = /** @type {const} */ (['any', 'max', 'min', 'range']);
   const kindOptions = KINDS.map((k) => ({ value: k, label: t(`create.budget.${k}`) }));
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  // The server's rule: a deadline passes at the end of its day, UTC, so today (UTC) is still allowed.
+  const today = new Date().toISOString().slice(0, 10);
+  const stillOpen = (/** @type {string} */ d) => isValidFutureDate(d, Date.now());
   const defaultCurrency = lang === 'ru' ? 'RUB' : 'EUR';
 
   /** @param {string} current */
@@ -50,7 +53,7 @@
       max = ex.budget.max == null ? '' : String(ex.budget.max);
       currency = ex.budget.currency ?? defaultCurrency;
       // The server refuses a past deadline: make the organiser pick a new one instead of resubmitting the old.
-      if (ex.deadline && ex.deadline >= tomorrow) deadline = ex.deadline;
+      if (ex.deadline && stillOpen(ex.deadline)) deadline = ex.deadline;
       else fieldErrors = { deadline: t('create.deadlinePast') };
       drawn = ex.status !== 'open';
       ready = true;
@@ -83,7 +86,7 @@
       }
     }
     if (!deadline) e.deadline = t('common.required');
-    else if (deadline < tomorrow) e.deadline = t('create.deadlinePast');
+    else if (!stillOpen(deadline)) e.deadline = t('create.deadlinePast');
     fieldErrors = e;
     return Object.keys(e).length === 0;
   }
@@ -204,7 +207,7 @@
           id="deadline"
           class="input w-full"
           type="date"
-          min={tomorrow}
+          min={today}
           required
           aria-invalid={fieldErrors.deadline ? 'true' : undefined}
           aria-describedby={fieldErrors.deadline ? 'deadline-error' : undefined}

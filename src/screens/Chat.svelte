@@ -87,7 +87,11 @@
 <svelte:document onvisibilitychange={() => (visible = document.visibilityState === 'visible')} />
 
 {#if loadCode}
-  <div class="alert alert-error alert-soft" role="alert"><span>{errorText(loadCode === 'NOT_FOUND' ? 'EXCHANGE_GONE' : loadCode)}</span></div>
+  <div class="alert alert-error alert-soft" role="alert">
+    <span>{errorText(loadCode === 'NOT_FOUND' ? 'EXCHANGE_GONE' : loadCode)}</span>
+    <!-- Clearing the error re-runs the polling effect: it loads at once and polls again. -->
+    {#if loadCode === 'INTERNAL'}<button class="btn btn-sm" onclick={() => (loadCode = '')}>{t('common.retry')}</button>{/if}
+  </div>
 {:else if !thread}
   <div class="flex justify-center p-6"><span class="loading loading-spinner loading-lg" role="status" aria-label={t('common.loading')}></span></div>
 {:else}
