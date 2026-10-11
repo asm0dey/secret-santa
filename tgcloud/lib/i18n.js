@@ -18,6 +18,10 @@ export const BOT = {
     removed: 'You were removed from "{exchange}".',
     drawn: '<b>Names are drawn for "{exchange}"</b>\n{organiser} started the draw. Open the app to see who you\'re gifting to. Budget: {budget}.',
     btnSeeRecipient: 'See my recipient',
+    giftSent: '<b>{exchange}</b>\nYour Secret Santa sent your gift. It\'s on its way!',
+    giftSentTracking: '\nTracking: <code>{tracking}</code>',
+    giftReceived: '<b>{exchange}</b>\nYour giftee received your gift. Nice work, Santa!',
+    btnMyGift: 'My gift',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
@@ -25,6 +29,10 @@ export const BOT = {
     removed: 'Вас удалили из обмена «{exchange}».',
     drawn: '<b>Жеребьёвка в обмене «{exchange}» прошла</b>\n{organiser} запустил(а) жеребьёвку. Откройте приложение, чтобы узнать, кому вы дарите подарок. Бюджет: {budget}.',
     btnSeeRecipient: 'Кому я дарю',
+    giftSent: '<b>{exchange}</b>\nВаш Тайный Санта отправил подарок. Он уже в пути!',
+    giftSentTracking: '\nТрек-номер: <code>{tracking}</code>',
+    giftReceived: '<b>{exchange}</b>\nВаш получатель получил подарок. Отличная работа, Санта!',
+    btnMyGift: 'Мой подарок',
   },
 };
 

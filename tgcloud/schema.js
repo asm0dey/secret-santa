@@ -22,7 +22,7 @@ export const exchanges = table('exchanges', {
   closeAt: integer('close_at'),
   status: text('status'), // open|drawn|closed
   drawnAt: integer('drawn_at'),
-  drawToken: text('draw_token'), // random value written by the request that wins the open -> drawn flip
+  drawToken: text('draw_token'), // random value written by the request that wins the open -> drawn flip (and again by the one that wins drawn -> closed)
   closedAt: integer('closed_at'),
   createdAt: integer('created_at'),
 });

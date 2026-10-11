@@ -1,6 +1,8 @@
 import { db } from 'sdk';
 import { eq } from 'sdk/db';
-import { members, users } from '../schema.js';
+import { clock } from '../lib/clock.js';
+import { giftStatus } from '../lib/giftStatus.js';
+import { members, users, assignments } from '../schema.js';
 import { enter } from '../lib/session.js';
 import { ERR, fail } from '../lib/errors.js';
 import { loadExchange } from '../lib/access.js';
@@ -12,7 +14,7 @@ import { detailsOf, wishTag } from '../lib/details.js';
 /**
  * @param {{ id: number }} input
  * @param {import('../lib/types.js').EndpointCtx} ctx
- * @returns {Promise<Record<string, any>>}
+ * @returns {Promise<import('../lib/types.js').ExchangeView>}
  */
 export default async function ({ id }, ctx) {
   const user = await enter(ctx);
@@ -23,7 +25,16 @@ export default async function ({ id }, ctx) {
   if (!mine && !isOrganiser) fail(ERR.FORBIDDEN); // R4: the organiser may look before joining
   const org = await db.select().from(users).where(eq(users.id, ex.organiserId)).get();
 
-  const view = {
+  const asgs = ex.status === 'open' ? [] : await db.select().from(assignments).where(eq(assignments.exchangeId, ex.id)).all();
+  const asSanta = asgs.find((a) => a.santaId === user.id);
+  const asGiftee = asgs.find((a) => a.gifteeId === user.id);
+  const live = ex.status === 'drawn'; // closed exchanges keep no personal data
+  const target = live && asSanta ? rows.find((m) => m.userId === asSanta.gifteeId) : undefined;
+  if (live && asSanta && asSanta.seenAt == null) {
+    await db.update(assignments).set({ seenAt: clock.now() }).where(eq(assignments.id, asSanta.id)).run();
+  }
+
+  return {
     id: ex.id, name: ex.name, code: ex.code, displayCode: displayCode(ex.code),
     inviteLink: `https://t.me/${BOT_USERNAME}?startapp=${ex.code}`,
     status: ex.status, budget: budgetOf(ex), deadline: ex.deadline,
@@ -34,7 +45,14 @@ export default async function ({ id }, ctx) {
       isOrganiser: m.userId === ex.organiserId, tag: wishTag(m),
     })),
     me: mine ? detailsOf(mine) : null,
+    drawPending: ex.status === 'drawn' && asgs.length === 0,
+    // Only the Santa gets the giftee's private details, and the giftee never gets anything naming the Santa.
+    giftee: target && asSanta ? { ...detailsOf(target), sentAt: asSanta.sentAt, tracking: asSanta.tracking } : null,
+    myGift: live && asGiftee ? { status: giftStatus(asGiftee), tracking: asGiftee.tracking, sentAt: asGiftee.sentAt } : null,
+    progress: rows.flatMap((m) => {
+      const a = asgs.find((x) => x.gifteeId === m.userId);
+      return a ? [{ userId: m.userId, nickname: m.nickname, gift: giftStatus(a) }] : [];
+    }),
+    // Task 10 adds overdue.
   };
-  // Tasks 8 and 10 add the drawn-state fields here.
-  return view;
 }

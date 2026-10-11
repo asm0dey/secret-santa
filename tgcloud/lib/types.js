@@ -20,4 +20,25 @@
 /** @typedef {typeof import('../schema.js').members.$inferSelect} Member */
 /** @typedef {import('./details.js').DetailsColumns} DetailsColumns */
 
+/** @typedef {'not_sent' | 'on_way' | 'received'} GiftStatus */
+
+/** @typedef {{ nickname: string | null, address: string | null, wishMode: string | null, wishlistUrl: string | null, wishes: string | null, sentAt: number | null, tracking: string | null }} Giftee what a Santa sees about their giftee */
+
+/** @typedef {{ status: GiftStatus, tracking: string | null, sentAt: number | null }} MyGift what a giftee sees about their gift: never who the Santa is */
+
+/** @typedef {{ userId: number, nickname: string | null, gift: GiftStatus }} ProgressRow status of the gift this member will receive */
+
+/**
+ * The getExchange response. `giftee`/`myGift` are null unless the exchange is drawn and the caller is in a pair;
+ * `progress` is empty until assignments exist. `drawPending`: drawn but the assignments were never written.
+ * @typedef {{
+ *   id: number, name: string, code: string, displayCode: string, inviteLink: string,
+ *   status: string | null, budget: Budget, deadline: string | null,
+ *   isOrganiser: boolean, organiserName: string,
+ *   members: { userId: number, nickname: string | null, isMe: boolean, isOrganiser: boolean, tag: 'surprise' | 'wishlist' | null }[],
+ *   me: ReturnType<typeof import('./details.js').detailsOf> | null,
+ *   drawPending: boolean, giftee: Giftee | null, myGift: MyGift | null, progress: ProgressRow[],
+ * }} ExchangeView
+ */
+
 export {};
