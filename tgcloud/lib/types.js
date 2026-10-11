@@ -43,4 +43,10 @@
  * }} ExchangeView
  */
 
+/** @typedef {{ id: number, first_name: string, language_code?: string }} BotUser */
+
+/** @typedef {{ id: string, from: BotUser, data?: string, message?: { message_id: number, chat: { id: number } } }} CallbackQuery */
+
+/** @typedef {{ message_id: number, from?: BotUser, chat: { id: number }, text?: string }} BotMessage */
+
 export {};
