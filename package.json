@@ -1,0 +1,12 @@
+{
+  "name": "secret-santa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "drizzle-orm": "^0.45.4",
+    "sdk": "file:./test/sdk"
+  }
+}
