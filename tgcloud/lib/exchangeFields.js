@@ -15,3 +15,6 @@ export const budgetColumns = (b) => {
 
 export const deadlineColumns = (d) =>
   isValidFutureDate(d, clock.now()) ? { deadline: d, closeAt: closeAtFor(d) } : fail(ERR.BAD_INPUT);
+
+// DB row -> the budget object clients see (inverse of budgetColumns).
+export const budgetOf = (ex) => ({ kind: ex.budgetKind, min: ex.budgetMin, max: ex.budgetMax, currency: ex.currency });

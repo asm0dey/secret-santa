@@ -11,10 +11,12 @@ export const BOT = {
   en: {
     start: 'Secret Santa: draw names with friends, right here in Telegram.',
     exchangeCancelled: '"{exchange}" was cancelled by its organiser.',
+    removed: 'You were removed from "{exchange}".',
   },
   ru: {
     start: 'Тайный Санта: жеребьёвка подарков с друзьями прямо в Telegram.',
     exchangeCancelled: 'Обмен «{exchange}» отменён организатором.',
+    removed: 'Вас удалили из обмена «{exchange}».',
   },
 };
 
