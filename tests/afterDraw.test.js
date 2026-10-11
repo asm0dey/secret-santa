@@ -150,7 +150,7 @@ test('markReceived notifies the Santa once, anonymously, and is idempotent', asy
   expect(out.length).toBe(1);
   expect(out[0].params.chat_id).toBe(santa);
   expect(out[0].params.text).toBe(santa === 1002
-    ? '<b>Office &lt;Santa&gt;</b>\nВаш получатель получил подарок. Отличная работа, Санта!'
+    ? '<b>Office &lt;Santa&gt;</b>\nВаш подарок дошёл до получателя. Отличная работа, Санта!'
     : '<b>Office &lt;Santa&gt;</b>\nYour giftee received your gift. Nice work, Santa!');
   expect(out[0].params.text).not.toContain(`Nick${giftee}`);
   const first = (await asg(santa)).receivedAt;

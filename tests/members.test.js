@@ -129,7 +129,7 @@ test('removeMember: organiser only, open only, not themself; notifies in the rem
   expect(await removeMember({ id, userId: 2 }, ann)).toEqual({ ok: true });
   expect((await db.select().from(members).all()).map((m) => m.userId)).toEqual([1]);
   expect(api.calls.length).toBe(1);
-  expect(api.calls[0].params).toMatchObject({ chat_id: 2, text: 'Вас удалили из обмена «Office &lt;Santa&gt;».' });
+  expect(api.calls[0].params).toMatchObject({ chat_id: 2, text: 'Вас убрали из обмена «Office &lt;Santa&gt;».' });
   await join({ code: c, details: ideas }, bob);
   await setStatus(id, 'drawn');
   expect(await code(() => removeMember({ id, userId: 2 }, ann))).toBe('ALREADY_DRAWN');
