@@ -1,0 +1,1 @@
+{ "static": { "source": "dist", "spa": true, "immutable": ["/assets/*"] } }

@@ -7,7 +7,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "target": "es2022",
-    "types": ["bun"],
+    "types": ["bun", "telegram-web-app"],
     "paths": { "sdk": ["./test/sdk/index.js"], "sdk/db": ["./test/sdk/db.js"] }
   },
   "include": ["tgcloud", "test", "tests"]
