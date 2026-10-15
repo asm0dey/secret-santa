@@ -212,7 +212,7 @@ export default {
   'privacy.title': 'Privacy policy',
   'privacy.updated': 'Last updated: {date}',
   'privacy.1.h': 'Who we are',
-  'privacy.1.b': 'Secret Santa (@secret_santanabot) is run by {controller}, the data controller. Questions and requests: {contact}.',
+  'privacy.1.b': 'Secret Santa (@{bot}) is run by {controller}, the data controller. Questions and requests: {contact}.',
   'privacy.2.h': 'What we collect',
   'privacy.2.b': 'From Telegram: your user ID, first name, username, language and whether the bot may message you.\nWhat you enter: the nickname, shipping address, wishlist link and likes or dislikes you give when joining; messages you send to your Santa or giftee; the tracking number of a gift you send; the text of an appeal.\nIf you organise: the exchange name, budget and deadline.',
   'privacy.3.h': 'Why, and on what basis',

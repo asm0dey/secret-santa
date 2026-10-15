@@ -1,15 +1,14 @@
 <script>
   // Privacy policy: the #/privacy page, and the sheet on the join form.
   import { t, lang } from '../lib/i18n.js';
+  import { BOT_USERNAME } from '../../tgcloud/lib/config.js';
 
-  // The data controller and their contact for privacy requests.
-  const CONTROLLER = 'Pasha Finkelshteyn';
-  const CONTACT = 'me+privacy@asm0dey.site';
   const UPDATED = '2026-10-15';
 
   /** @type {{ titleId?: string }} */
   let { titleId = 'privacy-title' } = $props();
-  const who = { controller: CONTROLLER, contact: CONTACT };
+  // Per instance, from .env.local (see vite.config.js).
+  const who = { controller: import.meta.env.VITE_PRIVACY_CONTROLLER ?? '', contact: import.meta.env.VITE_PRIVACY_CONTACT ?? '', bot: BOT_USERNAME };
 </script>
 
 <article class="flex flex-col gap-3">
