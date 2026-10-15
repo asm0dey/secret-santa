@@ -15,7 +15,7 @@ import { enter } from '../lib/session.js';
 export default async function ({}, ctx) {
   const me = await enter(ctx);
   const mine = await db.select().from(exchanges)
-    .where(sql`${exchanges.organiserId} = ${me.id} or ${exchanges.id} in (select ${members.exchangeId} from ${members} where ${members.userId} = ${me.id})`)
+    .where(sql`${exchanges.organiserId} = ${me.id} or ${exchanges.id} in (select exchange_id from members where user_id = ${me.id})`)
     .orderBy(desc(exchanges.createdAt), desc(exchanges.id)).all();
 
   const list = [];
