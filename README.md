@@ -90,3 +90,8 @@ fix the fake as well as the code.
 ## Docs
 
 The design spec, the implementation plan and the mockups are in [`docs/superpowers/`](docs/superpowers/).
+
+## Licence
+
+[AGPL-3.0](LICENSE). If you run a modified version as a service, you must offer its complete source to that
+service's users.
