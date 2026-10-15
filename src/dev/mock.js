@@ -120,7 +120,7 @@ function exchangeView(id) {
     : null;
   return {
     id, name: ex.name, code: ex.code, displayCode: `${ex.code.slice(0, 3)}-${ex.code.slice(3)}`,
-    inviteLink: `https://t.me/secret_santa_bot?startapp=${ex.code}`,
+    inviteLink: `https://t.me/secret_santanabot?startapp=${ex.code}`,
     status: ex.status, budget: ex.budget, deadline: ex.deadline,
     isOrganiser, organiserName: 'Anna',
     members: peopleOf(id).map((p) => ({ userId: p.userId, nickname: p.nickname, isMe: p.userId === uid, isOrganiser: p.userId === ME, tag: p.tag })),

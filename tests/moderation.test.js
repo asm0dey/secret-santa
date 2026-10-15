@@ -13,6 +13,7 @@ import submitAppeal from '../tgcloud/endpoints/submitAppeal.js';
 import decideAppeal from '../tgcloud/endpoints/decideAppeal.js';
 import callbackQuery from '../tgcloud/handlers/callback_query.js';
 import message from '../tgcloud/handlers/message.js';
+import { APP_URL } from '../tgcloud/lib/config.js';
 import { closeExchange } from '../tgcloud/lib/closing.js';
 import { loadExchange } from '../tgcloud/lib/access.js';
 
@@ -96,7 +97,7 @@ test('block: blocks row, home.me.blocks, join/create refused, memberships and ex
   expect(told[0].params.text).toContain("You've been blocked from Secret Santa");
   expect(told[0].params.text).toContain('Office &lt;Santa&gt;');
   expect(told[0].params.parse_mode).toBe('HTML');
-  expect(told[0].params.reply_markup.inline_keyboard).toEqual([[{ text: 'Appeal', web_app: { url: 'https://example.invalid#/blocked' } }]]);
+  expect(told[0].params.reply_markup.inline_keyboard).toEqual([[{ text: 'Appeal', web_app: { url: APP_URL + '#/blocked' } }]]);
 });
 
 test('block is told in the user\'s language; blocking twice makes one block and one message', async () => {
@@ -290,10 +291,10 @@ test('callback appeal: only the blocking organiser decides; the second tap gets 
 test('/start (with or without payload, with bot name) replies with an Open button; everything else is ignored', async () => {
   await message({ message_id: 1, from: { id: 5, first_name: 'A', language_code: 'en' }, chat: { id: 5 }, text: '/start' }, {});
   await message({ message_id: 2, from: { id: 5, first_name: 'A', language_code: 'ru' }, chat: { id: 5 }, text: '/start abc123' }, {});
-  await message({ message_id: 3, from: { id: 5, first_name: 'A' }, chat: { id: 5 }, text: '/start@secret_santa_bot' }, {});
+  await message({ message_id: 3, from: { id: 5, first_name: 'A' }, chat: { id: 5 }, text: '/start@secret_santanabot' }, {});
   expect(sent().length).toBe(3);
   expect(sent()[0].params).toMatchObject({ chat_id: 5, text: 'Secret Santa: draw names with friends, right here in Telegram.' });
-  expect(sent()[0].params.reply_markup.inline_keyboard).toEqual([[{ text: 'Open', web_app: { url: 'https://example.invalid#/' } }]]);
+  expect(sent()[0].params.reply_markup.inline_keyboard).toEqual([[{ text: 'Open', web_app: { url: APP_URL + '#/' } }]]);
   expect(sent()[1].params.text).toContain('Тайный Санта');
   expect(sent()[1].params.reply_markup.inline_keyboard[0][0].text).toBe('Открыть');
   api.calls.length = 0;
