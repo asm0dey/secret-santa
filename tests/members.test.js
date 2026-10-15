@@ -32,8 +32,8 @@ const setStatus = (id, status) => db.update(exchanges).set({ status }).where(eq(
 
 test('join accepts a messy code, stores details; surprise nulls the wish fields', async () => {
   const { id, c } = await mk();
-  expect(await join({ code: ` ${c.slice(0, 3).toLowerCase()} - ${c.slice(3).toLowerCase()} `, details: ideas }, bob)).toEqual({ id });
-  expect(await join({ code: c, details: surprise }, cat)).toEqual({ id });
+  expect(await join({ consent: true, code: ` ${c.slice(0, 3).toLowerCase()} - ${c.slice(3).toLowerCase()} `, details: ideas }, bob)).toEqual({ id });
+  expect(await join({ consent: true, code: c, details: surprise }, cat)).toEqual({ id });
   const rows = await db.select().from(members).orderBy(members.id).all();
   expect(rows[0]).toMatchObject({ exchangeId: id, userId: 2, ...ideas });
   expect(rows[1]).toMatchObject({ userId: 3, wishMode: 'surprise', wishlistUrl: null, wishes: null });
@@ -41,9 +41,9 @@ test('join accepts a messy code, stores details; surprise nulls the wish fields'
 
 test('join errors: unknown code, repeat, blocked, bad details', async () => {
   const { id, c } = await mk();
-  for (const bad of ['NOPE', 'AAAAAA', null, undefined, '0O1IL1']) expect(await code(() => join({ code: bad, details: ideas }, bob))).toBe('NOT_FOUND');
-  await join({ code: c, details: ideas }, bob);
-  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('ALREADY_MEMBER');
+  for (const bad of ['NOPE', 'AAAAAA', null, undefined, '0O1IL1']) expect(await code(() => join({ consent: true, code: bad, details: ideas }, bob))).toBe('NOT_FOUND');
+  await join({ consent: true, code: c, details: ideas }, bob);
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, bob))).toBe('ALREADY_MEMBER');
   /** @type {any[]} */ // invalid on purpose
   const bads = [
     undefined, { ...ideas, nickname: '' }, { ...ideas, nickname: '   ' }, { ...ideas, nickname: 'x'.repeat(41) },
@@ -51,11 +51,11 @@ test('join errors: unknown code, repeat, blocked, bad details', async () => {
     { ...ideas, wishlistUrl: 'ftp://x' }, { ...ideas, wishlistUrl: 'javascript:alert(1)' },
     { ...ideas, wishlistUrl: 'https://' + 'x'.repeat(500) }, { ...ideas, wishes: 'x'.repeat(1001) }, { ...ideas, nickname: 5 },
   ];
-  for (const d of bads) expect(await code(() => join({ code: c, details: d }, cat))).toBe('BAD_INPUT');
-  await join({ code: c, details: { ...ideas, nickname: 'x'.repeat(40), address: 'a'.repeat(500), wishlistUrl: '', wishes: 'w'.repeat(1000) } }, cat);
+  for (const d of bads) expect(await code(() => join({ consent: true, code: c, details: d }, cat))).toBe('BAD_INPUT');
+  await join({ consent: true, code: c, details: { ...ideas, nickname: 'x'.repeat(40), address: 'a'.repeat(500), wishlistUrl: '', wishes: 'w'.repeat(1000) } }, cat);
   expect((await db.select().from(members).where(eq(members.userId, 3)).get())?.wishlistUrl).toBeNull();
   await db.insert(blocks).values({ userId: 4, organiserId: 1, exchangeId: 1, exchangeName: 'E', createdAt: 1 }).run();
-  expect(await code(() => join({ code: c, details: ideas }, user(4, 'Dan')))).toBe('BLOCKED');
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, user(4, 'Dan')))).toBe('BLOCKED');
   expect((await db.select().from(members).all()).length).toBe(2);
   expect(id).toBeGreaterThan(0);
 });
@@ -63,22 +63,22 @@ test('join errors: unknown code, repeat, blocked, bad details', async () => {
 test('101st join is FULL', async () => {
   const { id, c } = await mk();
   for (let i = 0; i < 100; i++) await db.insert(members).values({ exchangeId: id, userId: 1000 + i, nickname: 'n', joinedAt: 1 }).run();
-  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('FULL');
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, bob))).toBe('FULL');
   await db.delete(members).where(eq(members.userId, 1000)).run();
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
 });
 
 test('join after draw or close is refused', async () => {
   const { id, c } = await mk();
   await setStatus(id, 'drawn');
-  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('ALREADY_DRAWN');
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, bob))).toBe('ALREADY_DRAWN');
   await setStatus(id, 'closed');
-  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('CLOSED');
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, bob))).toBe('CLOSED');
 });
 
 test('findByCode returns the preview and isMember', async () => {
   const { id, c } = await mk();
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
   const want = { id, name: 'Office <Santa>', status: 'open', budget: { kind: /** @type {'max'} */ ('max'), min: null, max: 50, currency: 'EUR' }, deadline: '2026-12-20', organiserName: 'Ann', memberCount: 1 };
   expect(await findByCode({ code: c.toLowerCase() }, bob)).toEqual({ ...want, isMember: true });
   expect(await findByCode({ code: c }, cat)).toEqual({ ...want, isMember: false });
@@ -89,7 +89,7 @@ test('findByCode returns the preview and isMember', async () => {
 test('updateMyDetails: member only, open and drawn, not closed', async () => {
   const { id, c } = await mk();
   expect(await code(() => updateMyDetails({ id, details: ideas }, bob))).toBe('FORBIDDEN');
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
   /** @type {import('../tgcloud/lib/types.js').Details} */
   const next = { ...ideas, nickname: 'Robert', wishMode: 'surprise' };
   expect(await updateMyDetails({ id, details: next }, bob)).toEqual({ ok: true });
@@ -105,13 +105,13 @@ test('updateMyDetails: member only, open and drawn, not closed', async () => {
 
 test('leave: organiser cannot, member can before the draw, not after', async () => {
   const { id, c } = await mk();
-  await join({ code: c, details: ideas }, ann);
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, ann);
+  await join({ consent: true, code: c, details: ideas }, bob);
   expect(await code(() => leave({ id }, ann))).toBe('FORBIDDEN');
   expect(await code(() => leave({ id }, cat))).toBe('FORBIDDEN');
   expect(await leave({ id }, bob)).toEqual({ ok: true });
   expect((await db.select().from(members).all()).map((m) => m.userId)).toEqual([1]);
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
   await setStatus(id, 'drawn');
   expect(await code(() => leave({ id }, bob))).toBe('ALREADY_DRAWN');
   expect((await db.select().from(members).all()).length).toBe(2);
@@ -119,8 +119,8 @@ test('leave: organiser cannot, member can before the draw, not after', async () 
 
 test('removeMember: organiser only, open only, not themself; notifies in the removed user\'s language', async () => {
   const { id, c } = await mk();
-  await join({ code: c, details: ideas }, ann);
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, ann);
+  await join({ consent: true, code: c, details: ideas }, bob);
   expect(await code(() => removeMember({ id, userId: 1 }, bob))).toBe('FORBIDDEN');
   expect(await code(() => removeMember({ id, userId: 2 }, bob))).toBe('FORBIDDEN');
   expect(await code(() => removeMember({ id, userId: 1 }, ann))).toBe('FORBIDDEN');
@@ -130,16 +130,16 @@ test('removeMember: organiser only, open only, not themself; notifies in the rem
   expect((await db.select().from(members).all()).map((m) => m.userId)).toEqual([1]);
   expect(api.calls.length).toBe(1);
   expect(api.calls[0].params).toMatchObject({ chat_id: 2, text: 'Вас убрали из обмена «Office &lt;Santa&gt;».' });
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
   await setStatus(id, 'drawn');
   expect(await code(() => removeMember({ id, userId: 2 }, ann))).toBe('ALREADY_DRAWN');
 });
 
 test('getExchange: pre-draw shape, tags, and nothing private about others', async () => {
   const { id, c } = await mk();
-  await join({ code: c, details: ideas }, bob);
-  await join({ code: c, details: surprise }, cat);
-  await join({ code: c, details: { ...ideas, nickname: 'Ann N', address: '1 Org Lane', wishlistUrl: '', wishes: '' } }, ann);
+  await join({ consent: true, code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: surprise }, cat);
+  await join({ consent: true, code: c, details: { ...ideas, nickname: 'Ann N', address: '1 Org Lane', wishlistUrl: '', wishes: '' } }, ann);
 
   const asBob = await getExchange({ id }, bob);
   expect(asBob).toMatchObject({
@@ -167,15 +167,15 @@ test('getExchange: non-member FORBIDDEN; organiser who has not joined gets me: n
   const org = await getExchange({ id }, ann);
   expect(org.me).toBeNull();
   expect(org.members).toEqual([]);
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, bob);
   await leave({ id }, bob);
   expect(await code(() => getExchange({ id }, bob))).toBe('FORBIDDEN');
 });
 
 test('ids from input must be numbers: a string user id cannot remove the organiser; a string exchange id is BAD_INPUT', async () => {
   const { id, c } = await mk();
-  await join({ code: c, details: ideas }, ann);
-  await join({ code: c, details: ideas }, bob);
+  await join({ consent: true, code: c, details: ideas }, ann);
+  await join({ consent: true, code: c, details: ideas }, bob);
   api.calls.length = 0;
   expect(await code(() => removeMember({ id, userId: /** @type {any} */ ('1') }, ann))).toBe('BAD_INPUT');
   expect(await code(() => removeMember({ id, userId: /** @type {any} */ (1.5) }, ann))).toBe('BAD_INPUT');
@@ -193,7 +193,13 @@ test('join racing a block: a block landing after enter() refuses the insert', as
     await db.insert(blocks).values({ userId: 2, organiserId: 9, exchangeId: 99, createdAt: 1 }).run();
     return orig(q);
   };
-  expect(await code(() => join({ code: c, details: ideas }, bob))).toBe('BLOCKED');
+  expect(await code(() => join({ consent: true, code: c, details: ideas }, bob))).toBe('BLOCKED');
   expect(/** @type {any} */ (db).run).toBe(orig);
+  expect(await db.select().from(members).all()).toEqual([]);
+});
+
+test('join without accepting the privacy policy is BAD_INPUT and stores nothing', async () => {
+  const { c } = await mk();
+  for (const consent of [undefined, false, 'true']) expect(await code(() => join({ consent, code: c, details: ideas }, bob))).toBe('BAD_INPUT');
   expect(await db.select().from(members).all()).toEqual([]);
 });

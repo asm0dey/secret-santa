@@ -5,6 +5,8 @@
   import { t, tn, errorText } from '../lib/i18n.js';
   import { requestWriteAccess, wa } from '../lib/tg.js';
   import Segmented from '../components/Segmented.svelte';
+  import Sheet from '../components/Sheet.svelte';
+  import Privacy from './Privacy.svelte';
 
   /** @type {{ code?: string, id?: string }} */
   let { code, id } = $props();
@@ -19,9 +21,11 @@
   let wishMode = $state('ideas');
   let wishlistUrl = $state('');
   let wishes = $state('');
+  let consent = $state(false);
+  let showPolicy = $state(false);
   /** @type {{ name: string, organiserName: string, memberCount: number } | null} */
   let exchange = $state(null);
-  /** @type {{ nickname?: string, address?: string, wishlist?: string }} */
+  /** @type {{ nickname?: string, address?: string, wishlist?: string, consent?: string }} */
   let fieldErrors = $state({});
   let exchangeId = 0;
   let ready = $state(false);
@@ -60,6 +64,7 @@
     const e = {};
     if (!nickname.trim()) e.nickname = t('common.required');
     if (!address.trim()) e.address = t('common.required');
+    if (code && !consent) e.consent = t('join.consentRequired');
     if (wishMode === 'ideas' && wishlistUrl.trim() && !/^https?:\/\//.test(wishlistUrl.trim())) e.wishlist = t('join.wishlistInvalid');
     fieldErrors = e;
     return Object.keys(e).length === 0;
@@ -78,7 +83,7 @@
     };
     try {
       if (code) {
-        const res = await call('join', { code, details });
+        const res = await call('join', { code, details, consent });
         await requestWriteAccess();
         replace(`#/x/${res.id}`);
       } else {
@@ -178,6 +183,23 @@
         </div>
       {/if}
 
+      {#if code}
+        <div class="fieldset">
+          <label class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              class="checkbox mt-0.5"
+              aria-invalid={fieldErrors.consent ? 'true' : undefined}
+              aria-describedby={fieldErrors.consent ? 'consent-error' : undefined}
+              onchange={() => (fieldErrors.consent = undefined)}
+              bind:checked={consent}
+            />
+            <span class="text-sm">{t('join.consent')} <a href="#/privacy" class="link link-primary" onclick={(e) => { e.preventDefault(); showPolicy = true; }}>{t('join.consentLink')}</a></span>
+          </label>
+          {@render problem('consent', fieldErrors.consent)}
+        </div>
+      {/if}
+
       <div class="flex flex-col gap-2">
         {#if code}<p class="text-sm opacity-70">{t('join.writeAccessHint')}</p>{/if}
         {#if error}<p class="text-sm text-error" role="alert">{error}</p>{/if}
@@ -189,3 +211,10 @@
     </form>
   {/if}
 </div>
+
+{#if showPolicy}
+  <Sheet labelId="policy-title" onclose={() => (showPolicy = false)}>
+    <Privacy titleId="policy-title" />
+    <button class="btn btn-block mt-4" onclick={() => (showPolicy = false)}>{t('common.close')}</button>
+  </Sheet>
+{/if}

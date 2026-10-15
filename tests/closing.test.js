@@ -28,8 +28,8 @@ const poke = () => home({}, user(9999)); // any endpoint runs the sweep via ente
 /** @param {boolean} [joinOrg] */
 async function mk(joinOrg = false) {
   const { id, code } = await createExchange({ name: 'Office <Santa>', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  if (joinOrg) await join({ code, details: det('Orga1001') }, ann);
-  for (let i = 2; i <= 5; i++) await join({ code, details: det(`Nick${1000 + i}`) }, user(1000 + i));
+  if (joinOrg) await join({ consent: true, code, details: det('Orga1001') }, ann);
+  for (let i = 2; i <= 5; i++) await join({ consent: true, code, details: det(`Nick${1000 + i}`) }, user(1000 + i));
   await draw({ id }, ann);
   api.calls.length = 0;
   return id;
@@ -201,7 +201,7 @@ test('a closed exchange a few days old (crash, then an idle bot) is still re-wip
 
 test('the sweep removes member rows whose exchange is gone (a crash inside cancel), and nothing else', async () => {
   const { id, code } = await createExchange({ name: 'Live', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  await join({ code, details: det('Keep') }, user(1002));
+  await join({ consent: true, code, details: det('Keep') }, user(1002));
   await db.insert(members).values([{ exchangeId: 777, userId: 1003 }, { exchangeId: 777, userId: 1004 }]).run();
   await poke();
   expect((await db.select().from(members).all()).map((m) => [m.exchangeId, m.userId])).toEqual([[id, 1002]]);

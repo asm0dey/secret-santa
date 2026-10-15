@@ -11,6 +11,7 @@
   import Chat from './screens/Chat.svelte';
   import Blocked from './screens/Blocked.svelte';
   import Appeal from './screens/Appeal.svelte';
+  import Privacy from './screens/Privacy.svelte';
 
   loadThemePref().then(applyTheme);
 
@@ -40,6 +41,8 @@
       <Chat id={$route.params.id} side={$route.params.side} />
     {:else if $route.name === 'blocked'}
       <Blocked />
+    {:else if $route.name === 'privacy'}
+      <Privacy />
     {:else if $route.name === 'appeal'}
       <Appeal blockId={$route.params.blockId} />
     {:else}

@@ -21,8 +21,8 @@ const det = (nickname) => ({ nickname, address: '1 Street', wishMode: 'surprise'
 /** @param {number} n @param {boolean} [organiserJoins] */
 async function mk(n, organiserJoins = true) {
   const { id, code: c } = await createExchange({ name: 'Office <Santa>', budget: { kind: 'max', max: 50, currency: 'EUR' }, deadline: '2026-12-20' }, ann);
-  if (organiserJoins) await join({ code: c, details: det('Annie') }, ann);
-  for (let i = 2; i <= n; i++) await join({ code: c, details: det(`Nick${i}`) }, user(i, `Name${i}`, i === 2 ? 'ru' : 'en'));
+  if (organiserJoins) await join({ consent: true, code: c, details: det('Annie') }, ann);
+  for (let i = 2; i <= n; i++) await join({ consent: true, code: c, details: det(`Nick${i}`) }, user(i, `Name${i}`, i === 2 ? 'ru' : 'en'));
   return id;
 }
 const rows = () => db.select().from(assignments).all();

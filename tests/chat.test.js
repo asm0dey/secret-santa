@@ -26,7 +26,7 @@ async function mk(n, doDraw = true) {
   const { id, code: c } = await createExchange({ name: 'Office <Santa>', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
   for (let i = 1; i <= n; i++) {
     const nickname = `Nick${1000 + i}`;
-    await join({ code: c, details: { nickname, address: 'x', wishMode: 'surprise' } }, user(1000 + i));
+    await join({ consent: true, code: c, details: { nickname, address: 'x', wishMode: 'surprise' } }, user(1000 + i));
   }
   if (doDraw) await draw({ id }, ann);
   api.calls.length = 0;

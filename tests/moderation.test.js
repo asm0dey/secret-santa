@@ -37,7 +37,7 @@ const blockRows = () => db.select().from(blocks).orderBy(blocks.id).all();
 // A drawn exchange by `org` (not a member) with the given Santas.
 async function mk(org = 1001, santas = [1002, 1003, 1004, 1005], name = 'Office <Santa>') {
   const { id, code: c } = await createExchange({ name, budget: { kind: 'any' }, deadline: '2026-12-20' }, user(org));
-  for (const s of santas) await join({ code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
+  for (const s of santas) await join({ consent: true, code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
   await draw({ id }, user(org));
   api.calls.length = 0;
   return id;
@@ -66,9 +66,9 @@ test('block: blocks row, home.me.blocks, join/create refused, memberships and ex
   const id = await mk();
   // victim 1003: member of an open exchange by 1005 (not 1001), and organises an open exchange with a member
   const other = (await createExchange({ name: 'Other', budget: { kind: 'any' }, deadline: '2026-12-20' }, user(1005)));
-  await join({ code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003));
+  await join({ consent: true, code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003));
   const own = (await createExchange({ name: 'Mine <b>', budget: { kind: 'any' }, deadline: '2026-12-20' }, user(1003)));
-  await join({ code: own.code, details: { nickname: 'Pal', address: 'x', wishMode: 'surprise' } }, user(1006));
+  await join({ consent: true, code: own.code, details: { nickname: 'Pal', address: 'x', wishMode: 'surprise' } }, user(1006));
   const before = await db.select().from(assignments).where(eq(assignments.exchangeId, id)).all();
   api.calls.length = 0;
 
@@ -78,7 +78,7 @@ test('block: blocks row, home.me.blocks, join/create refused, memberships and ex
   expect(b).toMatchObject({ userId: 1003, organiserId: 1001, exchangeId: id, exchangeName: 'Office <Santa>', createdAt: LATE, appealAt: null, decision: null });
 
   expect((await home({}, user(1003))).me.blocks).toEqual([{ id: b.id, exchangeName: 'Office <Santa>', createdAt: LATE, appealed: false, decision: null }]);
-  expect(await code(() => join({ code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003)))).toBe('BLOCKED');
+  expect(await code(() => join({ consent: true, code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003)))).toBe('BLOCKED');
   expect(await code(() => createExchange({ name: 'N', budget: { kind: 'any' }, deadline: '2026-12-30' }, user(1003)))).toBe('BLOCKED');
 
   // open memberships gone / own open exchange deleted and members told; drawn membership stays
@@ -339,7 +339,7 @@ test('two concurrent blocks: one row, one message, both succeed', async () => {
 test('a repeated block finishes the side effects a crashed first call left undone, without a second message', async () => {
   const id = await mk();
   const other = await createExchange({ name: 'Other', budget: { kind: 'any' }, deadline: '2026-12-20' }, user(1005));
-  await join({ code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003));
+  await join({ consent: true, code: other.code, details: { nickname: 'V', address: 'x', wishMode: 'surprise' } }, user(1003));
   setNow(LATE);
   // the first call died right after its insert
   await db.insert(blocks).values({ userId: 1003, organiserId: 1001, exchangeId: id, exchangeName: 'Office <Santa>', createdAt: LATE }).run();
@@ -351,7 +351,7 @@ test('a repeated block finishes the side effects a crashed first call left undon
 
 test('the organiser cannot block themself', async () => {
   const { id, code: c } = await createExchange({ name: 'Self', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  for (const s of [1001, 1002, 1003]) await join({ code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
+  for (const s of [1001, 1002, 1003]) await join({ consent: true, code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
   await draw({ id }, ann);
   setNow(LATE);
   expect(await code(() => block({ id, santaUserId: 1001 }, ann))).toBe('FORBIDDEN');

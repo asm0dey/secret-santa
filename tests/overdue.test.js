@@ -27,7 +27,7 @@ const sent = () => api.calls.filter((c) => c.method === 'sendMessage');
 // Organiser is user 1001 (not a member); Santas are 1002..1005.
 async function mk() {
   const { id, code: c } = await createExchange({ name: 'Office <Santa>', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  for (let i = 2; i <= 5; i++) await join({ code: c, details: { nickname: `Nick${1000 + i}`, address: 'x', wishMode: 'surprise' } }, user(1000 + i));
+  for (let i = 2; i <= 5; i++) await join({ consent: true, code: c, details: { nickname: `Nick${1000 + i}`, address: 'x', wishMode: 'surprise' } }, user(1000 + i));
   await draw({ id }, ann);
   api.calls.length = 0;
   return id;
@@ -197,7 +197,7 @@ test('blockable: false once any block exists for the Santa in this exchange, als
 
 test('an organiser who joined and has not sent is not in their own overdue box, nor nudged', async () => {
   const { id, code: c } = await createExchange({ name: 'Self', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  for (const s of [1001, 1002, 1003]) await join({ code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
+  for (const s of [1001, 1002, 1003]) await join({ consent: true, code: c, details: { nickname: `Nick${s}`, address: 'x', wishMode: 'surprise' } }, user(s));
   await draw({ id }, ann);
   api.calls.length = 0;
   setNow(LATE);

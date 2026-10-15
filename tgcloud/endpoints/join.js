@@ -10,11 +10,12 @@ import { detailsColumns } from '../lib/details.js';
 import { addMember } from '../lib/membership.js';
 
 /**
- * @param {{ code: unknown, details: import('../lib/types.js').Details }} input
+ * @param {{ code: unknown, details: import('../lib/types.js').Details, consent: unknown }} input
  * @param {import('../lib/types.js').EndpointCtx} ctx
  * @returns {Promise<{ id: number }>}
  */
-export default async function ({ code, details }, ctx) {
+export default async function ({ code, details, consent }, ctx) {
+  if (consent !== true) fail(ERR.BAD_INPUT); // privacy policy accepted; joinedAt doubles as the consent time
   const me = await enter(ctx);
   if (me.blocked) fail(ERR.BLOCKED);
   const c = normalizeCode(code) ?? fail(ERR.NOT_FOUND);

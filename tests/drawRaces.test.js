@@ -24,8 +24,8 @@ const sent = () => api.calls.filter((c) => c.method === 'sendMessage');
 /** @param {number} n */
 async function mk(n) {
   const { id, code: c } = await createExchange({ name: 'Gifts', budget: { kind: 'any' }, deadline: '2026-12-20' }, ann);
-  await join({ code: c, details: det('Annie') }, ann);
-  for (let i = 2; i <= n; i++) await join({ code: c, details: det(`Nick${i}`) }, user(i, `Name${i}`));
+  await join({ consent: true, code: c, details: det('Annie') }, ann);
+  for (let i = 2; i <= n; i++) await join({ consent: true, code: c, details: det(`Nick${i}`) }, user(i, `Name${i}`));
   return { id, c };
 }
 
@@ -73,7 +73,7 @@ test('removeMember in that window is refused and the member is not messaged', as
 test('join in that window is refused: no member without an assignment', async () => {
   const { id, c } = await mk(3);
   rivalDrawBefore('run', id);
-  expect(await code(() => join({ code: c, details: det('Late') }, user(9, 'Late')))).toBe('ALREADY_DRAWN');
+  expect(await code(() => join({ consent: true, code: c, details: det('Late') }, user(9, 'Late')))).toBe('ALREADY_DRAWN');
   await expectConsistent(id);
 });
 
@@ -133,7 +133,7 @@ test('join/leave/remove/delete still work before the draw', async () => {
   const { id, c } = await mk(4);
   await leave({ id }, user(4, 'Name4'));
   await removeMember({ id, userId: 3 }, ann);
-  await join({ code: c, details: det('Back') }, user(3, 'Name3'));
+  await join({ consent: true, code: c, details: det('Back') }, user(3, 'Name3'));
   expect((await db.select().from(members).where(eq(members.exchangeId, id)).all()).length).toBe(3);
   await deleteExchange({ id }, ann);
   expect(await db.select().from(exchanges).all()).toEqual([]);

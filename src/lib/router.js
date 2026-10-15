@@ -10,7 +10,7 @@ const NUM = /^\d+$/;
 const HOME = { name: 'home', params: {} };
 
 /**
- * Hash to route. Names: home, new, join, exchange (params.tab optional: giftee|gift|progress), edit, details, chat, blocked, appeal.
+ * Hash to route. Names: home, new, join, exchange (params.tab optional: giftee|gift|progress), edit, details, chat, blocked, appeal, privacy.
  * @param {string} hash
  * @returns {Route}
  */
@@ -20,6 +20,7 @@ export function parse(hash) {
   if (p.length === 0) return HOME;
   if (a === 'new' && p.length === 1) return { name: 'new', params: {} };
   if (a === 'blocked' && p.length === 1) return { name: 'blocked', params: {} };
+  if (a === 'privacy' && p.length === 1) return { name: 'privacy', params: {} };
   if (a === 'join' && b && p.length === 2) return { name: 'join', params: { code: b } };
   if (a === 'appeal' && b && NUM.test(b) && p.length === 2) return { name: 'appeal', params: { blockId: b } };
   if (a === 'x' && b && NUM.test(b)) {
