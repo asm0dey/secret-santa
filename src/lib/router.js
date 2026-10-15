@@ -15,7 +15,8 @@ const HOME = { name: 'home', params: {} };
  * @returns {Route}
  */
 export function parse(hash) {
-  const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  // Telegram appends its launch data to a web_app button's hash after '?': '#/x/5/giftee?tgWebAppData=…'.
+  const p = hash.replace(/^#\/?/, '').split('?')[0].split('/').filter(Boolean);
   const [a, b, c, d] = p;
   if (p.length === 0) return HOME;
   if (a === 'new' && p.length === 1) return { name: 'new', params: {} };
@@ -97,6 +98,7 @@ export function backOrReplace(path) {
 export function initRouter() {
   const target = fromStartParam(startParam());
   if (target) history.replaceState(null, '', target);
+  else if (location.hash.includes('?')) history.replaceState(null, '', location.hash.split('?')[0]); // drop Telegram's launch data (telegram-web-app.js has already read it)
   trail = [];
   at = history.state?.n ?? 0;
   const sync = () => {

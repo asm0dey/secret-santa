@@ -36,6 +36,8 @@ test('strings: every ERR code has a localized message, plus INTERNAL', () => {
 test('router: hash parsing', () => {
   expect(parse('#/x/12/chat/santa')).toEqual({ name: 'chat', params: { id: '12', side: 'santa' } });
   expect(parse('#/x/12/chat/giftee')).toEqual({ name: 'chat', params: { id: '12', side: 'giftee' } });
+  expect(parse('#/x/5/giftee?tgWebAppData=a%3Db&tgWebAppVersion=8.0')).toEqual({ name: 'exchange', params: { id: '5', tab: 'giftee' } });
+  expect(parse('#/blocked?tgWebAppVersion=8.0')).toEqual({ name: 'blocked', params: {} });
   expect(parse('')).toEqual({ name: 'home', params: {} });
   expect(parse('#/')).toEqual({ name: 'home', params: {} });
   expect(parse('#/new')).toEqual({ name: 'new', params: {} });
