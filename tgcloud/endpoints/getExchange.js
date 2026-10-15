@@ -7,7 +7,7 @@ import { enter } from '../lib/session.js';
 import { ERR, fail } from '../lib/errors.js';
 import { loadExchange } from '../lib/access.js';
 import { displayCode } from '../lib/code.js';
-import { BOT_USERNAME } from '../lib/config.js';
+import { instance } from '../lib/config.js';
 import { budgetOf } from '../lib/exchangeFields.js';
 import { overdueOf } from '../lib/overdue.js';
 import { detailsOf, wishTag } from '../lib/details.js';
@@ -37,7 +37,7 @@ export default async function ({ id }, ctx) {
 
   return {
     id: ex.id, name: ex.name, code: ex.code, displayCode: displayCode(ex.code),
-    inviteLink: `https://t.me/${BOT_USERNAME}?startapp=${ex.code}`,
+    inviteLink: `https://t.me/${(await instance()).botUsername}?startapp=${ex.code}`,
     status: ex.status, budget: budgetOf(ex), deadline: ex.deadline,
     isOrganiser, organiserName: org?.firstName ?? '',
     // Never address, wishlistUrl or wishes of anyone here.

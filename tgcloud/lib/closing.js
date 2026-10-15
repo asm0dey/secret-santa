@@ -5,7 +5,6 @@ import { clock } from './clock.js';
 import { loadExchange } from './access.js';
 import { send, sendPhoto, esc } from './notify.js';
 import { t } from './i18n.js';
-import { APP_URL } from './config.js';
 import { token as newToken } from './draw.js';
 
 /** Deletes everything personal in an exchange. Idempotent. @param {number} exchangeId */
@@ -69,7 +68,7 @@ async function gather(ex) {
       }
     }
     for (const { a, lang, giftee } of plan) {
-      await sendPhoto(a.gifteeId, APP_URL + '/sorry.jpg', t(lang, 'sorry', { name: giftee, exchange, organiser }));
+      await sendPhoto(a.gifteeId, '/sorry.jpg', t(lang, 'sorry', { name: giftee, exchange, organiser }));
     }
   };
 }

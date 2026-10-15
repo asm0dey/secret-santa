@@ -144,7 +144,7 @@ test('getExchange: pre-draw shape, tags, and nothing private about others', asyn
   const asBob = await getExchange({ id }, bob);
   expect(asBob).toMatchObject({
     id, name: 'Office <Santa>', code: c, displayCode: `${c.slice(0, 3)}-${c.slice(3)}`,
-    inviteLink: `https://t.me/secret_santanabot?startapp=${c}`, status: 'open',
+    inviteLink: `https://t.me/test_santa_bot?startapp=${c}`, status: 'open',
     budget: { kind: 'max', min: null, max: 50, currency: 'EUR' }, deadline: '2026-12-20',
     isOrganiser: false, organiserName: 'Ann', me: ideas,
   });

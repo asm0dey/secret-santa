@@ -6,7 +6,7 @@ import { users, exchanges, members, blocks } from '../tgcloud/schema.js';
 import { enter } from '../tgcloud/lib/session.js';
 import { loadExchange, requireMember, requireOrganiser, requireStatus } from '../tgcloud/lib/access.js';
 import { send, sendPhoto, esc, hooks } from '../tgcloud/lib/notify.js';
-import { APP_URL } from '../tgcloud/lib/config.js';
+const APP_URL = 'https://app1234567890.tgcloud.ai';
 
 beforeEach(resetDb);
 
@@ -88,8 +88,8 @@ test('send posts HTML text with buttons mapped', async () => {
 test('send without buttons has no reply_markup; sendPhoto uses sendPhoto', async () => {
   await send(5, 'x');
   expect('reply_markup' in api.calls[0].params).toBe(false);
-  expect(await sendPhoto(5, 'https://p/1.png', 'cap', [[{ text: 'T', data: 'd' }]])).toBe(true);
-  expect(api.calls[1]).toMatchObject({ method: 'sendPhoto', params: { chat_id: 5, photo: 'https://p/1.png', caption: 'cap', parse_mode: 'HTML' } });
+  expect(await sendPhoto(5, '/1.png', 'cap', [[{ text: 'T', data: 'd' }]])).toBe(true);
+  expect(api.calls[1]).toMatchObject({ method: 'sendPhoto', params: { chat_id: 5, photo: APP_URL + '/1.png', caption: 'cap', parse_mode: 'HTML' } });
 });
 
 test('send returns false on 403 without throwing', async () => {
@@ -105,7 +105,7 @@ test('send retries once after 429, waiting retry_after', async () => {
   hooks.sleep = async (s) => { waits.push(s); };
   try {
     let n = 0;
-    api.failFor = () => (n++ === 0 ? new BotApiError('Too Many Requests', { retry_after: 3 }) : undefined);
+    api.failFor = (m) => (m === 'sendMessage' && n++ === 0 ? new BotApiError('Too Many Requests', { retry_after: 3 }) : undefined);
     expect(await send(5, 'x')).toBe(true);
     expect(waits).toEqual([3]);
     expect(api.calls).toHaveLength(1);
@@ -129,4 +129,11 @@ test('enter skips the users write when nothing changed', async () => {
     expect(writes).toBe(1);
   } finally { /** @type {any} */ (db).update = orig; }
   expect((await db.select().from(users).get())?.firstName).toBe('Anna');
+});
+
+test('send and sendPhoto return false without throwing when the bot lookup fails', async () => {
+  api.failFor = (m) => (m === 'getMe' ? new BotApiError('Unauthorized', { error_code: 401 }) : undefined);
+  expect(await send(5, 'x')).toBe(false);
+  expect(await sendPhoto(5, '/1.png', 'cap')).toBe(false);
+  expect(api.calls.length).toBe(0);
 });

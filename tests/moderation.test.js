@@ -13,7 +13,7 @@ import submitAppeal from '../tgcloud/endpoints/submitAppeal.js';
 import decideAppeal from '../tgcloud/endpoints/decideAppeal.js';
 import callbackQuery from '../tgcloud/handlers/callback_query.js';
 import message from '../tgcloud/handlers/message.js';
-import { APP_URL } from '../tgcloud/lib/config.js';
+const APP_URL = 'https://app1234567890.tgcloud.ai';
 import { closeExchange } from '../tgcloud/lib/closing.js';
 import { loadExchange } from '../tgcloud/lib/access.js';
 

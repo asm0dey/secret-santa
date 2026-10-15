@@ -2,6 +2,7 @@ import { getTableConfig } from 'drizzle-orm/sqlite-core';
 import { api, sqlite } from 'sdk';
 import { clock } from '../tgcloud/lib/clock.js';
 import * as schema from '../tgcloud/schema.js';
+import { forgetInstance } from '../tgcloud/lib/config.js';
 
 /** @param {string} s */
 const q = (s) => `"${s}"`;
@@ -28,6 +29,7 @@ export function resetDb() {
   }
   api.calls.length = 0;
   api.failFor = () => undefined;
+  forgetInstance();
   restoreNow();
 }
 
